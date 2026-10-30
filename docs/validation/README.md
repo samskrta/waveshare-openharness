@@ -20,6 +20,8 @@ Not tested on hardware: PWR-button interaction, speaker sound/voice accuracy, ba
 
 ## Mechanical
 
+The current [refined Rev B enclosure](refined-enclosure.md) supersedes the first mechanical prototype.
+
 - Cased-module and speaker dimensions were checked against official references and the user's approximate speaker measurement.
 - Build script exported each printable part as one valid CAD solid.
 - Mesh checks require watertight, consistently wound, single-component STL output.

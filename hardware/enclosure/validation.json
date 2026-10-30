@@ -1,11 +1,34 @@
 {
-  "parameters_mm": {
-    "outer_scale": 1.2,
+  "revision": "refined-continuous-rim",
+  "frame": {
+    "origin_world_mm": [
+      -16.988116817219133,
+      0.0,
+      26.376491026360874
+    ],
+    "tilt_deg": 26.0
+  },
+  "parameters": {
     "case_diameter": 51.0,
     "case_depth": 12.1,
     "case_bore": 51.6,
-    "case_seat_depth": 12.6,
     "front_aperture": 49.8,
+    "front_outer_diameter": 55.2,
+    "case_front_z": -1.5,
+    "front_lip_back_z": -1.3,
+    "front_padding": 0.2,
+    "sphere_radius": 31.9,
+    "sphere_center_z": 12.0,
+    "shell_thickness": 1.9,
+    "face_tilt_deg": 26.0,
+    "usb_slot_width": 14.0,
+    "usb_slot_height": 7.0,
+    "usb_center_depth": 5.3,
+    "usb_corner_radius": 2.0,
+    "usb_plug_reference_width": 13.4,
+    "usb_plug_reference_height": 6.4,
+    "usb_plug_reference_insertion": 15.0,
+    "rim_coupon_depth": 11.0,
     "speaker_width": 30.0,
     "speaker_height": 20.0,
     "speaker_depth": 7.0,
@@ -13,102 +36,68 @@
     "speaker_pocket_height": 20.8,
     "speaker_corner_radius": 2.0,
     "speaker_center_y": 4.5,
+    "speaker_shift_z": 0.0,
     "speaker_back_z": -21.2,
-    "usb_window_width": 16.0,
-    "usb_window_height": 11.0,
-    "usb_window_depth": 5.0,
-    "module_rotation_deg": -90.0,
+    "base_thickness": 2.4,
     "pilot_diameter": 1.7,
     "clearance_diameter": 2.3,
-    "bezel_thickness": 2.2,
-    "floor_thickness": 2.4,
-    "base_radius": 24.0,
-    "rear_cavity_radius": 23.7
+    "front_center_height": 26.376491026360874
   },
   "parts": {
     "Housing_Waveshare_Cased": {
       "valid": true,
       "solids": 1,
-      "volume_mm3": 19591.895064536446,
+      "volume_mm3": 9276.507851093187,
       "bounds_mm": [
-        63.91012095856615,
-        64.00013702523094,
-        39.81702359511759
+        63.81356387916837,
+        63.80957807610196,
+        36.03527381311168
       ],
       "mesh": {
         "watertight": true,
         "consistent_winding": true,
         "components": 1,
-        "triangles": 6406,
-        "volume_mm3": 19500.392772891064,
+        "triangles": 163402,
+        "volume_mm3": 9272.39089769416,
         "bounds_mm": [
           [
-            -53.69319534301758,
-            -31.488679885864258,
-            -1.0658141036401503e-14
+            -55.89469909667969,
+            -31.894699096679688,
+            -3.552713678800501e-14
           ],
           [
-            9.20546817779541,
-            31.5,
-            39.2226448059082
+            7.898685932159424,
+            31.894699096679688,
+            36.022212982177734
           ]
         ]
       }
     },
-    "Front_Bezel": {
+    "Base_Carrier": {
       "valid": true,
       "solids": 1,
-      "volume_mm3": 2147.429441582161,
+      "volume_mm3": 10080.805514752876,
       "bounds_mm": [
-        62.37903448485797,
-        61.32185261940312,
-        2.2275207831473827
+        60.85534180295926,
+        60.855341802959266,
+        27.888352937853753
       ],
       "mesh": {
         "watertight": true,
         "consistent_winding": true,
         "components": 1,
-        "triangles": 3300,
-        "volume_mm3": 2146.1334780920733,
+        "triangles": 25782,
+        "volume_mm3": 10078.838154095254,
         "bounds_mm": [
           [
-            -31.175756454467773,
-            -31.16223907470703,
-            0.0
+            -30.42120933532715,
+            -30.42120933532715,
+            -7.105427357601002e-15
           ],
           [
-            31.175756454467773,
-            30.132091522216797,
-            2.200000047683716
-          ]
-        ]
-      }
-    },
-    "Speaker_Cradle": {
-      "valid": true,
-      "solids": 1,
-      "volume_mm3": 2179.558738540745,
-      "bounds_mm": [
-        42.201657748128824,
-        25.002230707966866,
-        8.802912812886984
-      ],
-      "mesh": {
-        "watertight": true,
-        "consistent_winding": true,
-        "components": 1,
-        "triangles": 4692,
-        "volume_mm3": 2179.4573903799414,
-        "bounds_mm": [
-          [
-            -21.099597930908203,
-            -12.79973030090332,
-            0.0
-          ],
-          [
-            21.099597930908203,
-            12.199999809265137,
-            8.800000190734863
+            30.42120933532715,
+            30.42120933532715,
+            27.877676010131836
           ]
         ]
       }
@@ -118,16 +107,16 @@
       "solids": 1,
       "volume_mm3": 258.4845113547584,
       "bounds_mm": [
-        41.802030839605436,
-        5.602030839605444,
-        1.2079680023488113
+        41.80037319609133,
+        5.60037319609133,
+        1.202037958339229
       ],
       "mesh": {
         "watertight": true,
         "consistent_winding": true,
         "components": 1,
-        "triangles": 2348,
-        "volume_mm3": 258.4979618020647,
+        "triangles": 6572,
+        "volume_mm3": 258.4872196294972,
         "bounds_mm": [
           [
             -20.899999618530273,
@@ -142,59 +131,30 @@
         ]
       }
     },
-    "Bottom_Cover": {
-      "valid": true,
-      "solids": 1,
-      "volume_mm3": 3736.2623707933194,
-      "bounds_mm": [
-        48.01074182519593,
-        48.01611233728497,
-        2.4214834503918508
-      ],
-      "mesh": {
-        "watertight": true,
-        "consistent_winding": true,
-        "components": 1,
-        "triangles": 13548,
-        "volume_mm3": 3734.033115200946,
-        "bounds_mm": [
-          [
-            -23.9892578125,
-            -23.997314453125,
-            0.0
-          ],
-          [
-            24.0,
-            23.997314453125,
-            2.4000000953674316
-          ]
-        ]
-      }
-    },
     "Case_Fit_Coupon": {
       "valid": true,
       "solids": 1,
       "volume_mm3": 1115.516719436664,
       "bounds_mm": [
-        56.01253209606192,
-        56.01879769349914,
-        3.0250639921238225
+        56.00435182106542,
+        56.00435182106542,
+        3.00435182106542
       ],
       "mesh": {
         "watertight": true,
         "consistent_winding": true,
         "components": 1,
-        "triangles": 840,
-        "volume_mm3": 1114.8510801891437,
+        "triangles": 2016,
+        "volume_mm3": 1115.4011258629423,
         "bounds_mm": [
           [
-            -27.987468719482422,
-            -27.99686622619629,
+            -28.0,
+            -28.0,
             0.0
           ],
           [
             28.0,
-            27.99686622619629,
+            28.0,
             3.0
           ]
         ]
@@ -203,18 +163,18 @@
     "Speaker_Fit_Coupon": {
       "valid": true,
       "solids": 1,
-      "volume_mm3": 583.283889803847,
+      "volume_mm3": 583.2838898038466,
       "bounds_mm": [
-        34.402538499506804,
-        24.402538499506807,
-        3.002538499506807
+        34.40046644511416,
+        24.400466445114155,
+        3.000466445114161
       ],
       "mesh": {
         "watertight": true,
         "consistent_winding": true,
         "components": 1,
-        "triangles": 896,
-        "volume_mm3": 583.257467584277,
+        "triangles": 2048,
+        "volume_mm3": 583.2791600885757,
         "bounds_mm": [
           [
             -17.200000762939453,
@@ -228,31 +188,83 @@
           ]
         ]
       }
+    },
+    "USB_Rim_Fit_Coupon": {
+      "valid": true,
+      "solids": 1,
+      "volume_mm3": 4022.3025579874648,
+      "bounds_mm": [
+        63.03275930284456,
+        63.03275930284457,
+        11.012847403642503
+      ],
+      "mesh": {
+        "watertight": true,
+        "consistent_winding": true,
+        "components": 1,
+        "triangles": 152032,
+        "volume_mm3": 4020.524178873287,
+        "bounds_mm": [
+          [
+            -31.506458282470703,
+            -31.506458282470703,
+            -1.2434497875801753e-14
+          ],
+          [
+            31.506458282470703,
+            31.506458282470703,
+            11.0
+          ]
+        ]
+      }
     }
   },
   "intersections_mm3": {
-    "Housing_Waveshare_Cased / Front_Bezel": 0.0,
-    "Housing_Waveshare_Cased / Speaker_Cradle": 0.0,
+    "Housing_Waveshare_Cased / Base_Carrier": 0.0,
     "Housing_Waveshare_Cased / Speaker_Strap": 0.0,
-    "Housing_Waveshare_Cased / Bottom_Cover": 0.0,
     "Housing_Waveshare_Cased / Cased_Module_REFERENCE": 0.0,
     "Housing_Waveshare_Cased / Speaker_REFERENCE": 0.0,
-    "Front_Bezel / Speaker_Cradle": 0.0,
-    "Front_Bezel / Speaker_Strap": 0.0,
-    "Front_Bezel / Bottom_Cover": 0.0,
-    "Front_Bezel / Cased_Module_REFERENCE": 0.0,
-    "Front_Bezel / Speaker_REFERENCE": 0.0,
-    "Speaker_Cradle / Speaker_Strap": 0.0,
-    "Speaker_Cradle / Bottom_Cover": 0.0,
-    "Speaker_Cradle / Cased_Module_REFERENCE": 0.0,
-    "Speaker_Cradle / Speaker_REFERENCE": 0.0,
-    "Speaker_Strap / Bottom_Cover": 0.0,
+    "Housing_Waveshare_Cased / USB_Plug_REFERENCE": 0.0,
+    "Base_Carrier / Speaker_Strap": 0.0,
+    "Base_Carrier / Cased_Module_REFERENCE": 0.0,
+    "Base_Carrier / Speaker_REFERENCE": 0.0,
+    "Base_Carrier / USB_Plug_REFERENCE": 0.0,
     "Speaker_Strap / Cased_Module_REFERENCE": 0.0,
     "Speaker_Strap / Speaker_REFERENCE": 0.0,
-    "Bottom_Cover / Cased_Module_REFERENCE": 0.0,
-    "Bottom_Cover / Speaker_REFERENCE": 0.0,
-    "Cased_Module_REFERENCE / Speaker_REFERENCE": 0.0
+    "Speaker_Strap / USB_Plug_REFERENCE": 0.0,
+    "Cased_Module_REFERENCE / Speaker_REFERENCE": 0.0,
+    "Cased_Module_REFERENCE / USB_Plug_REFERENCE": 0.0,
+    "Speaker_REFERENCE / USB_Plug_REFERENCE": 0.0
   },
   "original_base_commit": "a270d3e787aed01e9b204abd11b0d8952a4fc071",
-  "caveat": "CAD-checked prototype. No physical print or fit verification yet. Print both coupons first."
+  "caveat": "CAD-checked prototype, not physically fitted. USB port depth is inferred from the vendor drawing; verify the rim coupon with the actual cased unit and cable.",
+  "module_insertion": {
+    "method": "vertical entry with module centered at sphere center, then along display normal",
+    "case_envelope_margin_mm": 0.1,
+    "maximum_sample_step_mm": 0.2,
+    "samples": 245,
+    "max_overlap_mm3": 0.0,
+    "entry_offset_world_mm": [
+      -3.7021810245233318,
+      -0.0,
+      -7.590595976802161
+    ]
+  },
+  "carrier_insertion_samples_mm3": {
+    "-40": 0.0,
+    "-30": 0.0,
+    "-20": 0.0,
+    "-10": 0.0,
+    "-5": 0.0,
+    "-2": 0.0,
+    "-1": 0.0,
+    "-0.5": 0.0,
+    "0": 0.0
+  },
+  "outside_envelope_mm3": {
+    "Base_Carrier": 0.0,
+    "Speaker_Strap": 0.0,
+    "Cased_Module_REFERENCE": 0.0
+  },
+  "continuous_front_rim_missing_mm3": 0.0
 }

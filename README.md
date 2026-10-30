@@ -4,7 +4,7 @@ OpenHarness firmware and a printable desktop enclosure for the **Waveshare ESP32
 
 The physical device runs the board-specific firmware and connects over native USB to the official Harness desktop app. A live OpenHarness-managed Claude Code session was validated. The enclosure is a **CAD-checked prototype awaiting a physical print/fit test**.
 
-![Enclosure assembly, internal mount and exploded views](hardware/enclosure/Assembly_Preview.png)
+![Refined enclosure with continuous front rim](hardware/enclosure/Refined_Hero.png)
 
 ## Hardware
 
@@ -27,9 +27,11 @@ The physical device runs the board-specific firmware and connects over native US
 
 ## Print the enclosure
 
-Start with the two small **fit coupons**, then print one each of the housing, front bezel, speaker cradle, speaker strap and bottom cover. The front bezel includes USB cable clearance. Buttons, microphones and card access have relief openings. The bottom cover is vented; use rubber feet so its sound path is not blocked by the desk.
+**Refined Rev B** has three main printed parts: a smooth one-piece shell with a continuous front rim, an underside display/speaker cartridge, and the speaker strap. USB-C uses a rounded tunnel behind the rim. There are no front screws; two countersunk screws close the underside. The supplied speaker lies flat above the hidden grille.
 
-See the [enclosure guide](hardware/enclosure/README.md) for tolerances, fasteners, printing, assembly and unresolved physical checks. All supplied print STLs are watertight, consistently wound single-component meshes. The reference assembly has zero calculated component overlap. This does not guarantee a physical fit or acoustic performance.
+Start with **Case_Fit_Coupon**, **Speaker_Fit_Coupon**, and the new **USB_Rim_Fit_Coupon**, which reproduces the actual front collar and cable entry. Then print the housing, Base_Carrier and strap. The old separate bezel, speaker cradle and bottom cover are superseded. Use rubber feet to keep the underside sound path clear.
+
+See the [enclosure guide](hardware/enclosure/README.md) for tolerances, fasteners, printing, assembly and unresolved physical checks. All supplied print STLs are watertight, consistently wound single-component meshes. The reference assembly has zero calculated component overlap, a checked continuous front rim, and checked case/cartridge insertion samples. This does not guarantee a physical fit or acoustic performance.
 
 ## Build firmware
 
@@ -65,4 +67,4 @@ See the [saved rotation validation](docs/validation/rotation-setting.md) and [fi
 
 Firmware base: [`autonomous-ai/openharness`](https://github.com/autonomous-ai/openharness), commit **a270d3e787aed01e9b204abd11b0d8952a4fc071**. This repository is a focused hardware port, not the complete upstream desktop/CLI monorepo. The patch is already applied here.
 
-The enclosure is a clean parametric remodeling based on the upstream round/tilted housing, enlarged for the retained Waveshare case and speaker. Upstream geometry is kept for reference and attribution. See [NOTICE](NOTICE.md), the [MIT license](LICENSE), and the manufacturer references linked in the enclosure guide. Vendor material retains its own rights.
+The enclosure is a new parametric spherical remodel inspired by the upstream round/tilted housing and its clean face, sized for the retained Waveshare case and speaker. Upstream geometry is kept for reference and attribution. See [NOTICE](NOTICE.md), the [MIT license](LICENSE), and the manufacturer references linked in the enclosure guide. Vendor material retains its own rights.

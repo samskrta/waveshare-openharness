@@ -1,5 +1,7 @@
 # USB-top revision — 2026-10-30
 
+Historical mechanical revision: the old housing/bezel pair is superseded by the [refined Rev B enclosure](../../hardware/enclosure/README.md). The firmware validation below remains evidence for that fixed-orientation image.
+
 The complete cased module turns clockwise 90 degrees from the original left-port position. The firmware counter-rotates the dashboard image and uses the inverse mapping for touch. The retained protective case and speaker dimensions are unchanged.
 
 ## Implementation

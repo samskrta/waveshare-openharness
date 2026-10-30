@@ -1,0 +1,14 @@
+analytic shell 10172.28647926973 True
+Housing_Waveshare_Cased {'valid': True, 'solids': 1, 'volume_mm3': 9276.507851093187, 'bounds_mm': [63.81356387916837, 63.80957807610196, 36.03527381311168]}
+Base_Carrier {'valid': True, 'solids': 1, 'volume_mm3': 10080.805514752876, 'bounds_mm': [60.85534180295926, 60.855341802959266, 27.888352937853753]}
+Speaker_Strap {'valid': True, 'solids': 1, 'volume_mm3': 258.4845113547584, 'bounds_mm': [41.80037319609133, 5.60037319609133, 1.202037958339229]}
+Case_Fit_Coupon {'valid': True, 'solids': 1, 'volume_mm3': 1115.516719436664, 'bounds_mm': [56.00435182106542, 56.00435182106542, 3.00435182106542]}
+Speaker_Fit_Coupon {'valid': True, 'solids': 1, 'volume_mm3': 583.2838898038466, 'bounds_mm': [34.40046644511416, 24.400466445114155, 3.000466445114161]}
+USB_Rim_Fit_Coupon {'valid': True, 'solids': 1, 'volume_mm3': 4022.3025579874648, 'bounds_mm': [63.03275930284456, 63.03275930284457, 11.012847403642503]}
+Module insertion: {'method': 'vertical entry with module centered at sphere center, then along display normal', 'case_envelope_margin_mm': 0.1, 'maximum_sample_step_mm': 0.2, 'samples': 245, 'max_overlap_mm3': 0.0, 'entry_offset_world_mm': (-3.7021810245233318, -0.0, -7.590595976802161)}
+Carrier path: {'-40': 0.0, '-30': 0.0, '-20': 0.0, '-10': 0.0, '-5': 0.0, '-2': 0.0, '-1': 0.0, '-0.5': 0.0, '0': 0.0}
+Outside envelope: {'Base_Carrier': 0.0, 'Speaker_Strap': 0.0, 'Cased_Module_REFERENCE': 0.0}
+Front rim missing: 0.0
+/private/tmp/harness-mechanical/venv/lib/python3.12/site-packages/cadquery/utils.py:82: FutureWarning: save will be removed in the next release.
+  warn(f"{f.__name__} will be removed in the next release.", FutureWarning)
+DONE

@@ -1,73 +1,84 @@
-# Harness enclosure for the cased Waveshare 1.75-B
+# Refined Harness enclosure — Rev B
 
-**Prototype: CAD and mesh checks passed; no physical print/fit test has been performed. Print both fit coupons before the full housing.**
+**CAD-checked prototype. Physical print, cable fit and complete wired assembly have not been verified. Start with the three fit coupons.**
 
-This enclosure retains the stock protective case on the Waveshare ESP32-S3-Touch-AMOLED-1.75-B sold in [the linked Amazon listing](https://www.amazon.com/dp/B0F8868KK8). It accommodates the supplied rounded 2030 Type-B speaker. Select **Top** under the device's **Display rotation** setting (hold the dashboard face → Tabs → Controls). Install the cased module with **USB-C at 12 o'clock / top-center**, microSD access at the bottom, microphones on the upper diagonals, and PWR/BOOT on the lower diagonals. This turns the module clockwise 90 degrees from the first left-port enclosure; the firmware keeps the dashboard upright and touch aligned.
+This revision follows the original Autonomous enclosure's clean face and rounded body: a continuous integral front rim, no front screws, and a rounded USB tunnel behind the rim. It retains the Waveshare 1.75-B protective case and supplied rounded 30 × 20 × 7 mm speaker. The shell is a new analytic spherical remodel inspired by the original; its surfaces and dimensions are not identical to the original imported STEP.
 
-The enclosure was remodeled from the round, tilted form and dimensions of the Autonomous OpenHarness STEP housing. It is larger and has new mounting internals. The original imported trimmed/offset surfaces failed modification booleans, so this version uses clean parametric lofts rather than claiming to preserve every original surface. The original STEP is retained under `source/` for provenance.
+![Refined assembled enclosure](Refined_Hero.png)
 
-![Assembly and internal views](Assembly_Preview.png)
+Use **Top** in the board's Display rotation setting. USB-C stays at 12 o'clock. The factory case remains installed.
 
-## Download / print parts
+## Parts
 
-Print **one of each** from `stl/`:
+Print one of each main part from `stl/`:
 
-| Part | Function |
+| Part | Purpose |
 |---|---|
-| Housing_Waveshare_Cased | Main shell, cased-module seat, speaker rails, side access |
-| Front_Bezel | Removable retaining bezel; cable clearance notch at the top |
-| Speaker_Cradle | Rounded speaker pocket, protected rim supports, grille and wire exit |
-| Speaker_Strap | Holds the speaker's closed back; does not press its diaphragm |
-| Bottom_Cover | Removable vented underside |
+| `Housing_Waveshare_Cased` | One-piece rounded shell, integral front rim, USB tunnel and small service bores |
+| `Base_Carrier` | Removable underside, display cradle, horizontal speaker pocket, hidden grille and mounting pillars |
+| `Speaker_Strap` | Retains the speaker's closed back; keeps pressure off its acoustic face |
 
-First print `Case_Fit_Coupon` and `Speaker_Fit_Coupon`. The case ring should slide over the case without force; the speaker should enter the rounded pocket freely. These verify the two pocket dimensions, not the full depth stack or connector alignment. Inspect the sliced body before committing to a complete print.
+The former separate Front_Bezel, Speaker_Cradle and Bottom_Cover are superseded. They do not belong in this assembly. The strap keeps the prior fit dimensions. Do not mix the old housing/base with the new cartridge.
 
-STLs and individual STEPs use print orientation in millimeters. The combined `step/Harness_Waveshare_Cased_Assembly.step` uses assembled positions and contains **non-printable reference envelopes** for the device and speaker; do not print the assembly as one fused object.
+`step/Harness_Waveshare_Cased_Assembly.step` contains the assembled parts and simplified case, speaker and compact-plug reference envelopes. Those reference objects are not printable parts. Individual STEP/STL files use print orientation in millimeters.
 
-## Dimensions and clearances
+![Assembly and underside views](Assembly_Preview.png)
 
-| Feature | Design value |
+## Fit coupons first
+
+- **Case_Fit_Coupon:** 51.6 mm bore for the nominal 51 mm case. Confirm a free sliding fit.
+- **Speaker_Fit_Coupon:** 30.8 × 20.8 mm pocket with R2 corners. Confirm the supplied rounded speaker fits without force.
+- **USB_Rim_Fit_Coupon:** an 11 mm-deep section of the actual shell, including its continuous rim, USB tunnel and service bores. Seat the complete cased unit from behind, orient USB at the top, and check that your cable fully inserts without loading the case or rim. Verify button/microphone alignment before the full print.
+
+The USB and service-hole depths are inferred from the manufacturer's drawing; that drawing does not dimension every center. The reference plug body is **13.4 mm wide × 6.4 mm thick**, with 0.3 mm nominal clearance per side in a 14 × 7 mm slot. Your cable's overmold may differ. Test the actual unit/cable in the rim coupon and adjust the parameters if necessary.
+
+![USB opening without and with the compact-plug envelope](USB_Port_Detail.png)
+
+## Dimensions
+
+| Feature | Nominal value |
 |---|---:|
-| Stock protective case | 51.0 mm diameter x 12.1 mm depth |
-| Case bore | 51.6 mm diameter: 0.30 mm radial clearance |
-| Rear seat depth from bezel interface | 12.6 mm, allowing about 0.5 mm for rim padding |
-| Visible bezel opening | 49.8 mm; avoids the nominal 48.96 mm glass outline |
-| Speaker nominal body | 30 x 20 x 7.0 mm, rounded corners |
-| Speaker pocket | 30.8 x 20.8 mm, R2 internal corners |
-| Speaker retained depth | 7.2 mm between rim seats and strap |
-| Top USB body relief | 16 mm tangential width x 11 mm axial height |
-| Base cover | 48 mm diameter x 2.4 mm thickness |
-| Display plane | 26 degrees above the desk plane |
-| Main front diameter | About 62.4 mm; wider belly about 63 mm |
+| Retained protective case | Ø51.0 × 12.1 mm |
+| Front retention aperture | Ø49.8 mm; clears nominal Ø48.96 glass |
+| Front outside diameter | Ø55.2 mm before the 0.35 mm edge radius |
+| Face opening bevel | 0.35 mm; approximately 2.2 mm visible flat surround |
+| Case front behind the face | 1.5 mm |
+| Nominal front rim padding allowance | 0.2 mm |
+| Main spherical skin | 1.9 mm nominal |
+| Top USB slot | 14 × 7 mm, R2 corners, center 5.3 mm behind face |
+| Material above USB slot | 1.8 mm to the face plane; no break in the front rim |
+| PWR/BOOT service bores | Ø2.0 mm, lower diagonals |
+| Microphone bores | Ø1.4 mm, upper diagonals |
+| Speaker pocket | 30.8 × 20.8 mm; retained depth 7.2 mm |
+| Underside plate | 2.4 mm thick; two flush countersinks |
+| Display plane angle | 26° above desk |
+| Overall assembly | Approximately 64 × 64 × 38.5 mm |
 
-The supplied speaker's published working height is 6.8 +/- 0.3 mm; the user measured just under 7 mm. The 7.0 mm reference body is a conservative nominal envelope, not a scanned speaker. Its rim is supported above the grille; the acoustic face points toward the underside plenum. The cable exits on the right side of the cradle and has a relief opening.
+The microSD slot is serviced through the underside after lifting out the carrier and releasing the cased module. There is no external card-slot window.
 
-The cased-unit drawing specifies the overall diameter/depth but does not fully dimension every port center. The original left-port orientation was confirmed on the physical unit by the user; this revision rotates all module access openings, the front screw pattern and rear module wire relief together by a quarter-turn. The speaker cradle, strap, bottom cover and fit coupons retain their dimensions/positions. Mic, button and microSD openings follow the rotated drawing layout with generous relief. **Their final alignment, the USB cable overmold, and component depth/stack must still be physically checked.** No PCB, connector or antenna model is claimed as a complete exact solid in the assembly.
+## Hardware and print finish
 
-## Hardware
+- **4 × M2 × 8 mm countersunk screws:** two underneath, two inside on the speaker strap. The modeled heads are up to 4.0 mm diameter with a 90° countersink; pilot bores are 1.7 mm. Use a screw suitable for forming a thread in plastic, verify the fit on scrap, and tighten gently. No metal thread or insert is modeled.
+- Thin soft foam on the stock case's **plastic rim only**, if needed to take up print tolerance. Check the actual plastic/glass stack before tightening; the front rim must not clamp the glass.
+- Three or four thin rubber feet, at least 1.5 mm high, placed clear of the underside grille and fixing holes.
 
-- 6 x M2 x 8 mm plastic self-tapping **pan-head** screws: 3 for the front bezel, 3 for the bottom cover. Counterbores are 4.2 mm diameter.
-- 2 x M2 x 8 mm plastic self-tapping **countersunk** screws: speaker strap and cradle into the housing rails.
-- About 0.5 mm soft foam on the cased unit's **outer rear rim**, clear of the PCB and connectors. Check the stack; do not compress the glass.
-- Optional very thin foam on the speaker's closed back if it rattles; available depth clearance is small.
-- 4 adhesive rubber feet, at least 1.5 mm high, to keep the downward sound/vent holes clear of the desk.
+Suggested starting point: PETG, 0.4 mm nozzle, 0.12–0.16 mm layers on the exterior, four perimeters, and 4–5 top/bottom layers. The outer sphere and rounded edge are real CAD geometry; the STLs use 0.015 mm / 0.05-radian tessellation limits. The case and speaker pockets still depend on printer calibration.
 
-Pilot holes are 1.7 mm. These are for plastic self-tapping screws, not modeled M2 machine threads or heat-set inserts. Confirm screw fit on scrap and tighten gently. The upstream USB clamp, separate port PCB, button actuator and iron base are not required in this version.
+Print the shell on its underside mating edge and the cartridge on its flat underside. Inspect support needs under the USB tunnel and the cartridge's raised display cradle/strap ears. Keep supports removable from mating surfaces, service bores and the speaker pocket. The cartridge's supported surfaces are internal; avoid scarring the visible front rim. Inspect the sliced parts before printing.
 
-## Printing and assembly
+## Assembly
 
-Starting point: PETG, 0.4 mm nozzle, 0.2 mm layers, 4 perimeters, 4-5 top/bottom layers, 15-25% infill. PLA can serve as a fit prototype. The STL orientations put the main housing on its flat base and the smaller parts flat. Review support needs under connector windows and the cradle's screw ears; keep supports removable from the case seat and grille. Printer tuning determines final fit.
+1. Print and check all three coupons. Stop to adjust the fit parameters if the case, speaker or plug binds.
+2. Place the speaker in the cartridge's horizontal pocket, with its acoustic face toward the underside grille. Route its leads through the pocket's side relief. Fit the strap to the closed back using two countersunk screws; do not press the diaphragm.
+3. Support the empty shell face-down on a soft, rim-supporting surface. Keep the glass off the work surface. Insert the **complete cased unit** from the underside, USB toward the rounded top tunnel. Enter toward the middle of the enclosure, then move it along the display normal into the front lip. The geometric entry offset is about 3.7 mm horizontally and 7.6 mm below its seated position; the module cannot enter through the smaller front aperture.
+4. Connect the speaker and leave slack clear of the case rim, display cradle, screw bosses and grille. Rear connectors and wires are not included in the simplified case envelope; inspect their actual clearance.
+5. Insert the cartridge from underneath. Its raised circular register cups the **outer rear plastic case rim** and locates the display; the speaker stays flat underneath. Ensure the case is seated against the front rim with light rim padding as needed. Do not force the cartridge against a trapped cable or connector.
+6. Secure the two underside countersunk screws gently. Both heads should sit flush or below the underside. Add rubber feet clear of the sound slots.
+7. Check USB insertion/removal, touch, PWR/BOOT access, microphone and speaker operation after closing. To service microSD or the electronics, unplug USB and remove the underside cartridge.
 
-1. Print and check both coupons. Do not force either component into a tight print; adjust clearances first.
-2. Place the speaker in its cradle with the acoustic face toward the cradle grille and its closed back toward the strap. Route its leads through the right-hand relief.
-3. With the display out, install cradle and strap on the two internal rails using the countersunk screws. Do not clamp the diaphragm. Route the leads to the existing speaker connector without pinching or tension.
-4. Pad the outer case seat lightly. Insert the complete cased module from the front, aligning USB-C to the top cutout. Keep the PCB, antennas and rear connectors clear.
-5. Fit the C-shaped front bezel, with its notch at the USB side. Confirm the cable can fully seat, then secure the three bezel screws gently. The bezel retains the protective case rim rather than loading the glass.
-6. Check PWR/BOOT, microphone and card access before closing. Attach the bottom cover and rubber feet. Verify touch, USB and speaker operation again after assembly.
+## Editable CAD and verification
 
-## Editable CAD and checks
-
-Use Python 3.12 in a virtual environment. The CAD dependencies are sizable; allow several GB of disk space. Install the pinned requirements, then run:
+Use Python 3.12 with the pinned CAD dependencies:
 
 ```sh
 python -m pip install -r source/requirements.txt
@@ -76,15 +87,15 @@ python source/check_meshes.py
 python source/render_preview.py
 ```
 
-The `module_rotation_deg=-90` parameter maps the original left-port layout to the top-port layout in local CAD coordinates (+Y is up). The tilted desk body is not rotated. Do not mix the new housing with an old bezel: their three retaining screw positions differ. The script's parameter table controls the fit dimensions; some mounting geometry is specific to this layout. Treat larger parameter changes as a redesign and recheck the complete assembly. The generator rejects invalid/disconnected solids and material interference above 0.03 mm^3. The mesh checker requires watertight, consistently wound, single-component STL parts. `validation.json` records dimensions, volumes, mesh results and pairwise assembly checks.
+The generator checks solid validity, connected printable parts, pairwise assembly interference, cartridge containment within the exterior, a full 360° front-rim band, and a sampled two-stage display insertion path. It also samples the cartridge's vertical insertion. `validation.json` records the inputs and results. The rendering script uses the exported CAD meshes and recorded coordinate frame; the images are not substitutes for the model.
 
-The current reference assembly has zero calculated material overlap. These checks do not establish physical fit, acoustic performance, minimum wall strength, cable strain resistance or print durability.
+Passed for the current simplified envelopes: six valid single solids; six watertight, consistently wound single-component meshes; zero pairwise material overlap; zero cartridge/device protrusion; an unbroken front rim; 245 display insertion samples with 0.1 mm envelope margin and at most 0.2 mm between samples; nine cartridge insertion samples. These checks do not model actual wires, connector protrusions, fastener threads, acoustic performance or FDM strength. The physical fit remains to be tested.
 
-## Sources and attribution
+## References and attribution
 
-- Autonomous OpenHarness hardware, base commit `a270d3e787aed01e9b204abd11b0d8952a4fc071`: https://github.com/autonomous-ai/openharness/tree/main/devices/harness-device/hardware
-- Official cased-unit dimensions: https://files.waveshare.com/wiki/ESP32-S3-Touch-AMOLED-1.75/ESP32-S3-Touch-AMOLED-1.75-B-3D.zip
-- Official board resource page: https://docs.waveshare.com/ESP32-S3-Touch-AMOLED-1.75/Resources-And-Documents
-- Supplied speaker identification from the official board package image `8-2W-2030-Speaker-B_220.jpg`; Type-B speaker dimensions: https://www.waveshare.com/product/luckfox/8ohm-2w-speaker-b.htm
+- Autonomous OpenHarness housing and upstream MIT license, base commit `a270d3e787aed01e9b204abd11b0d8952a4fc071`: https://github.com/autonomous-ai/openharness/tree/main/devices/harness-device/hardware
+- Official cased-unit drawing: https://files.waveshare.com/wiki/ESP32-S3-Touch-AMOLED-1.75/ESP32-S3-Touch-AMOLED-1.75-B-3D.zip
+- Board resources: https://docs.waveshare.com/ESP32-S3-Touch-AMOLED-1.75/Resources-And-Documents
+- Supplied Type-B 2030 speaker: https://www.waveshare.com/product/luckfox/8ohm-2w-speaker-b.htm
 
-Manufacturer drawings are reference documents and retain their owners' rights. The upstream MIT notice is included in `source/UPSTREAM_LICENSE.txt`.
+`source/Original_Housing.step` and `source/UPSTREAM_LICENSE.txt` retain the original design's provenance. Manufacturer documents retain their owners' rights and are linked rather than republished.
