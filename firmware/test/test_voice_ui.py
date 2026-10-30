@@ -69,8 +69,8 @@ static struct {
     struct { bool live_summary; } memory[PANE_MEMORY_MAX];
 } s;
 static uint32_t now;
-static bool audio_active, recording, abort_requested, queue_full;
-static int starts, stops, aborts, cancels, confirms, scroll, gesture, reviews;
+static bool audio_active, recording, abort_requested, queue_full, actionable;
+static int starts, stops, aborts, cancels, confirms, scroll, gesture, reviews, wakes;
 static action_t queued;
 static agent_t *active(void) { return &s.agents[0]; }
 #define COPY(dst, src) snprintf(dst, sizeof(dst), "%s", (src) ? (src) : "")
@@ -81,6 +81,8 @@ void surface_tick(uint32_t value) { (void)value; }
 void display_lock(void) {}
 void display_unlock(void) {}
 void display_bump_activity(void) {}
+bool habitat_actionable_wait(void) { return actionable; }
+void display_wake(void) { wakes++; }
 void ht_scroll_cancel(int *value) { (void)value; }
 void ht_gesture_guard(int *value, uint32_t time) { (void)value; (void)time; }
 void ht_gesture_cancel(int *value) { (void)value; }
@@ -324,6 +326,9 @@ int main(void) {
     ui_set_connected(false); assert(!s.voice_retry_until);
     // The daemon a link drops forgets the Swarm Lead open here: the next one is told again (test_touch_ui.py).
     sw.opened = true; ui_set_connected(false); assert(!sw.opened);
+
+    reset(); s.nap=true; s.nap_until=now; actionable=true; habitat_tick();
+    assert(!s.nap && wakes==1); actionable=false;
 
     reset(); begin(); now = 601000; habitat_tick();
     assert(stops == 1 && s.voice_waiting);

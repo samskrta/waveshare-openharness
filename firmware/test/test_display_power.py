@@ -30,8 +30,13 @@ code = r'''
 static atomic_bool asleep, force_frame;
 static atomic_uint last_activity;
 static atomic_uint requested_brightness = 40;
+#define ATTENTION_BRIGHT_MS 15000u
+#define ATTENTION_DIM_PERCENT 12u
 #define ESP_LOGI(...) ((void)0)
-static int esp_lcd_panel_co5300_set_brightness(int p, unsigned level) { (void)p; assert(level <= 100); return 0; }
+static unsigned brightness_seen[4], brightness_calls;
+static int esp_lcd_panel_co5300_set_brightness(int p, unsigned level) {
+    (void)p; assert(level <= 100); brightness_seen[brightness_calls++ % 4]=level; return 0;
+}
 static void ht_illustrated_prepare(ht_scene_t *scene) { (void)scene; }
 static ht_scene_t scenes[2];
 static bool painted;
@@ -40,6 +45,7 @@ static uint32_t clock_ms;
 static unsigned frames, ticks, waits, locks, sleeps, wakes, full_frames, notifications;
 static unsigned stop_after;
 static int mode;
+static bool actionable;
 static bool panel_on = true;
 static int panel, render_guard;
 static jmp_buf finished;
@@ -69,9 +75,11 @@ static void display_lock(void) {
     locks++;
     // Touch wins the model lock while the renderer is waiting to auto-sleep.
     if (mode==2 && locks==2) display_bump_activity();
+    if (mode==8 && locks==2) actionable=true;
 }
 static void display_unlock(void) {}
 static void habitat_tick(void) { ticks++; }
+static bool habitat_actionable_wait(void) { return actionable; }
 static bool habitat_scene_take(ht_scene_t *out) { (void)out; return mode==4 || mode==5; }
 static unsigned receipts;
 static uint32_t habitat_scene_receipt(void) { return mode==4 || mode==5 ? 77 : 0; }
@@ -95,44 +103,58 @@ static unsigned ulTaskNotifyTake(int clear, uint32_t timeout) {
     if (++waits==stop_after) longjmp(finished,1);
     // Normal idle wake follows a quiet/asleep iteration, with no fresh model.
     if (mode==3 && waits==1) display_wake();
+    if (mode==6 && waits==1) clock_ms+=ATTENTION_BRIGHT_MS;
+    if (mode==7 && waits==1) actionable=false;
     return 0;
 }
 '''
 for name in ['elapsed_since', 'display_bump_activity', 'display_sleep', 'display_wake', 'render_task']:
     code += function(name)
 code += r'''
-static void run(int which, uint32_t now, uint32_t activity, bool sleep, unsigned loops) {
+static void run(int which, uint32_t now, uint32_t activity, bool sleep, bool wait, unsigned brightness, unsigned loops) {
     mode=which; clock_ms=now; atomic_store(&last_activity,activity);
+    actionable=wait; atomic_store(&requested_brightness,brightness);
     atomic_store(&asleep,sleep); atomic_store(&force_frame,false);
     memset(scenes,0,sizeof scenes); painted=mode!=4; panel_on=true; receipts=0; power_cb=power;
-    frames=ticks=waits=locks=sleeps=wakes=full_frames=notifications=0;
+    frames=ticks=waits=locks=sleeps=wakes=full_frames=notifications=brightness_calls=0;
     stop_after=loops;
     if (!setjmp(finished)) render_task(NULL);
     assert(waits==loops);
 }
 int main(void) {
-    run(4,1000,1000,false,1); assert(frames==1 && receipts==1);
-    run(5,1000,1000,true,1); assert(!frames && !receipts);
+    run(4,1000,1000,false,false,40,1); assert(frames==1 && receipts==1);
+    run(5,1000,1000,true,false,40,1); assert(!frames && !receipts);
     // A wake between power sampling and force-frame consumption must survive.
-    run(1,1000,1000,true,2);
+    run(1,1000,1000,true,false,40,2);
     assert(!display_is_asleep() && panel_on && wakes==1);
     assert(frames==1 && full_frames==1);
     // The idle decision must re-check activity once it owns the model lock.
-    run(2,300001,0,false,1);
+    run(2,300001,0,false,false,40,1);
     assert(!display_is_asleep() && !sleeps);
     // Still/quiet screens repaint on wake even when the scene never changes.
-    run(3,1000,1000,true,2);
+    run(3,1000,1000,true,false,40,2);
     assert(frames==1 && full_frames==1 && panel_on);
     // Normal idle expiry, the boundary, and the 32-bit uptime wrap.
-    run(0,300001,0,false,1); assert(display_is_asleep() && sleeps==1);
-    run(0,300000,0,false,1); assert(!display_is_asleep() && !sleeps);
-    run(0,100,UINT32_MAX-100,false,1); assert(!display_is_asleep() && !sleeps);
-    run(0,299900,UINT32_MAX-100,false,1); assert(display_is_asleep() && sleeps==1);
+    run(0,300001,0,false,false,40,1); assert(display_is_asleep() && sleeps==1);
+    run(0,300000,0,false,false,40,1); assert(!display_is_asleep() && !sleeps);
+    run(0,100,UINT32_MAX-100,false,false,40,1); assert(!display_is_asleep() && !sleeps);
+    run(0,299900,UINT32_MAX-100,false,false,40,1); assert(display_is_asleep() && sleeps==1);
+    // Actionable waits hold the panel awake, dim after 15 s without changing the saved request,
+    // and resolving the final wait starts a fresh five-minute idle period.
+    run(0,300001,0,false,true,40,1); assert(!display_is_asleep() && !sleeps && brightness_seen[0]==40);
+    run(6,1000,1000,false,true,40,2); assert(brightness_calls==2 && brightness_seen[0]==40 && brightness_seen[1]==12);
+    run(6,1000,1000,false,true,8,2); assert(brightness_calls==1 && brightness_seen[0]==8);
+    run(7,300001,0,false,true,40,2); assert(!display_is_asleep() && atomic_load(&last_activity)==clock_ms);
+    // Renderer attention never overrides an explicit screen-off; only a real event edge wakes it.
+    run(0,1000,1000,true,true,40,1); assert(display_is_asleep() && !wakes);
+    // Arrival while the renderer is taking the sleep lock wins the second predicate check.
+    run(8,300001,0,false,false,40,1); assert(!display_is_asleep() && !sleeps);
     // Repeated requests are idempotent; no extra callbacks/notifications.
+    display_sleep();
     unsigned n=notifications, s=sleeps, w=wakes;
     display_sleep(); assert(notifications==n && sleeps==s);
     display_wake(); display_wake(); assert(notifications==n+1 && wakes==w+1);
-    puts("Display power: production render-loop wake/repaint and touch/idle races, quiet wake, boundaries and wrap PASS");
+    puts("Display power: wake/repaint races, actionable brightness/idle policy, explicit off and wrap PASS");
 }
 '''
 with tempfile.TemporaryDirectory(prefix='harness-display-power-') as folder:

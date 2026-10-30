@@ -872,6 +872,10 @@ static int waiting(void)
         n += s.notice[i].question;
     return n;
 }
+bool habitat_actionable_wait(void)
+{
+    return s.ready && s.connected && !s.nap && waiting() > 0;
+}
 static int working(void)
 {
     int n = 0;
@@ -1185,10 +1189,10 @@ static ht_character_mood_t character_mood(void)
 {
     if (!s.connected)
         return HT_CHARACTER_OFFLINE;
-    if (waiting())
-        return HT_CHARACTER_ATTENTION;
     if (s.nap)
         return HT_CHARACTER_ASLEEP;
+    if (waiting())
+        return HT_CHARACTER_ATTENTION;
     if (!s.quiet && (s.pet_pose == 1 || s.pet_pose == 2))
         return HT_CHARACTER_BOOPED;
     if (!s.quiet && s.pet_pose == 3)
@@ -3250,6 +3254,7 @@ static void dispatch(action_t a)
         s.nap = !s.nap;
         s.nap_until = ms() + 15 * 60 * 1000;
         change();
+        if (habitat_actionable_wait()) display_wake();
         break;
     case A_FIND:
     case A_FORM: {
@@ -3995,6 +4000,7 @@ void habitat_tick(void)
     if (s.nap && (int32_t)(now - s.nap_until) >= 0) {
         s.nap = false;
         change();
+        if (habitat_actionable_wait()) display_wake();
     }
     if (s.voice_open) {
         display_bump_activity();
@@ -4870,8 +4876,9 @@ bool ui_notify_summary(const char *id, const char *name, const char *machine, co
     }
     change();
     if (alert) display_wake();
+    bool audible = alert && !question_view(s.view);
     display_unlock();
-    return alert;
+    return audible;
 }
 bool ui_turn_error(const char *id, const char *message)
 {
@@ -4893,8 +4900,9 @@ bool ui_turn_error(const char *id, const char *message)
     }
     change();
     if (!face) display_wake();
+    bool audible = !face && !question_view(s.view);
     display_unlock();
-    return !face;
+    return audible;
 }
 void ui_notif_seen(const char *id)
 {
@@ -5032,9 +5040,11 @@ bool ui_question_show(const char *id, const char *name, const char *machine, con
     // The question is shown on the home face, in the recap's place (render_home): no screen opens
     // for it. The display wakes so a person glancing over sees it.
     change();
-    if (!face) display_wake();
+    bool alert = !face && !s.nap;
+    bool audible = alert && !question_view(s.view);
+    if (alert) display_wake();
     display_unlock();
-    return !face;
+    return audible;
 }
 void ui_question_state(const cJSON *p)
 {
@@ -5245,9 +5255,9 @@ static bool swarm_notice_raise(const ht_supertab_t *t, const ht_lead_t *l, bool 
     s.notice_sequence++;
     bool face = on_face(l->id);
     if (face) notice_read_now(l->id);
-    else if (fresh) display_wake();
+    else if (fresh && !s.nap) display_wake();
     change();
-    return fresh && !face;
+    return fresh && !face && !s.nap && !question_view(s.view);
 }
 static void swarm_notice_drop(const char *lead)
 {
@@ -5458,8 +5468,9 @@ bool ui_supertab_notice(const char *tab, const char *lead, ht_chat_kind_t chat, 
     if (face) notice_read_now(l->id);
     else display_wake();
     change();
+    bool audible = !face && !question_view(s.view);
     display_unlock();
-    return !face;
+    return audible;
 }
 // The desktop opened that chat: its message entry is read there, and goes from the dial.
 void ui_supertab_notice_read(const char *tab, const char *lead, const char *chat_id)

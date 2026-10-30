@@ -12,6 +12,33 @@ idf.py -C firmware -B "$PWD/build/firmware" -DDEVICE_BOARD=waveshare-standard bu
 
 Use the explicit profile. Omitting it selects upstream shipped-dial wiring, including the wrong MCLK pin for this board. `dependencies.lock` records the resolved component set. Generated sdkconfig/build/component directories are ignored.
 
+## Actionable attention
+
+Pinned Harness questions, including Super Tab ask/stuck waits, wake the AMOLED immediately and show a static amber **Needs your answer** lower arc on the Focus face. The saved brightness is used for 15 seconds; while the wait remains unresolved, the renderer caps the panel at 12% and suspends only the normal five-minute idle sleep. Resolving the final wait restores the exact saved brightness and starts a fresh five-minute idle period. Ordinary idle, busy, completed turns, and restored notification history do not activate this behavior.
+
+Notification audio identifies the event without turning ordinary idle into an alert:
+
+- a fresh genuine question, approval, or actionable Super Tab transition says “Waiting.” once;
+- a live completion with an explicit `tier:"alert"` plays a short two-note procedural cue;
+- errors and off-face Lead/PM notices retain the established three-beep attention cue.
+
+All three use one speaker worker and independent 30-second cooldowns. Playback continues to honor Mute, yields immediately to microphone capture, and drops rather than retries when the shared codec is busy. Quiet mode stops character motion but does not mute alerts. Nap suppresses wait wake/audio edges for 15 minutes; ending Nap wakes once if a pinned wait remains. No cue interrupts a question currently being read. PWR/BOOT can still turn the screen off during a wait, and the renderer will not immediately undo that explicit choice. Disconnect disables the override without deleting cached rows; reconnect card baselines and replayed question IDs update state silently instead of manufacturing new audio.
+
+The waiting phrase is an embedded 16 kHz mono S16LE asset under `assets/audio/`; there is no runtime TTS or network dependency. Its generation and checksum are documented beside the asset. The completion cue is synthesized in fixed-size blocks, so writable audio RAM remains one 640-byte scratch buffer.
+
+The alert does not navigate or cover the question/answer UI. Its low static brightness reduces, but cannot eliminate, AMOLED burn-in risk during very long unresolved waits. Validate without flashing:
+
+```sh
+python3 firmware/test/test_display_power.py
+python3 firmware/test/test_question_ui.py
+python3 firmware/test/test_audio_notify.py
+python3 firmware/test/test_audio_routing.py
+bash firmware/test/run.sh
+idf.py -C firmware -B "$PWD/build/firmware" -DDEVICE_BOARD=waveshare-standard build
+```
+
+On hardware, verify the three cue classes, per-class cooldown, arrival, Mute, active recording preemption, Quiet, Nap expiry/manual wake, PWR screen-off, reconnect, multiple simultaneous waits, final resolution, and exact saved-brightness restoration. Do not flash an unfamiliar unit before following the backup and partition checks below.
+
 Changes:
 - `BSP_I2S_MCLK=42` for the standard board, leaving the shipped profile's GPIO16 intact.
 - PWR is an active-high input on TCA9554 P4. Preserve other expander bits and avoid changing PMIC charge configuration.
