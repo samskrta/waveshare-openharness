@@ -26,9 +26,11 @@ A normal restart passed the 8 MB PSRAM test, identified CST9217, logged `orienta
 
 The release folder contains the complete newly built image set for a fresh installation. Only its app was needed for this unit's upgrade. Existing 2026-10-29 logs describe the previous left-port image and remain separate.
 
-## Physical acceptance still needed
+## Physical acceptance
 
-Final human confirmation of upright dashboard/tap/swipe alignment with USB at the top is pending. The enclosure still needs a physical print and fit test, including cable insertion/strain, buttons, microphones, microSD, connector depth, rear wire routing and speaker acoustics. Print both fit coupons first; they check pocket sizes rather than port positions.
+The user confirmed on the actual unit: **with USB-C pointing up, the dashboard is upright and taps and swipes follow the finger correctly.**
+
+The enclosure still needs a physical print and fit test, including cable insertion/strain, buttons, microphones, microSD, connector depth, rear wire routing and speaker acoustics. Print both fit coupons first; they check pocket sizes rather than port positions.
 
 ## Build environment
 

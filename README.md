@@ -53,6 +53,8 @@ The temporary account permission allowing agents to start other agents was resto
 
 The [USB-top revision record](docs/validation/usb-top.md) separates the current rotation/build/flash checks from the initial bring-up evidence below.
 
+**USB-top orientation confirmed on actual hardware:** dashboard upright with USB-C at the top; taps and swipes follow the finger correctly.
+
 **Passed on actual hardware during initial bring-up:** firmware build/flash hash checks, boot and PSRAM test, display, physical touch, native USB session, clean framed traffic, codec initialization, microphone data reaching host STT, and a live Claude reply: `Waveshare dashboard connected.`
 
 **Passed offline:** the upstream host firmware test runner; CAD solid validity, connected parts, pairwise component clearance, and STL manifold/winding checks. The test runner's additional cJSON integration block is conditional on an activated `IDF_PATH`; see [validation details](docs/validation/README.md).
