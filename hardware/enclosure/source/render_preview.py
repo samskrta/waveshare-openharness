@@ -32,7 +32,7 @@ def panel(viewport,names,title,camera,focal,up,scale,local=True,offsets=None):
  text(r,title,35,670,23)
  return r
 names=list(files)
-r=panel((0,.49,.5,.94),names,'ASSEMBLED  |  Left USB-C access',(-90,-25,160),(0,0,-12),(0,1,0),45)
+r=panel((0,.49,.5,.94),names,'ASSEMBLED  |  Top USB-C access',(-90,-25,160),(0,0,-12),(0,1,0),45)
 r=panel((.5,.49,1,.94),['Housing_Waveshare_Cased','Speaker_Cradle','Speaker_Strap','Speaker_REFERENCE'],'FRONT OPEN  |  Cased-module seat + speaker',(-55,-35,150),(0,0,-14),(0,1,0),45)
 r=panel((0,.04,.5,.49),names,'EXPLODED  |  Five printable parts',(-130,-145,95),(0,0,-5),(0,0,1),72,offsets={'Front_Bezel':(0,0,32),'Cased_Module_REFERENCE':(0,0,16),'Speaker_Strap':(0,0,-7),'Speaker_Cradle':(0,0,-20),'Speaker_REFERENCE':(0,0,-20),'Bottom_Cover':(0,0,-35)})
 r=panel((.5,.04,1,.49),['Housing_Waveshare_Cased','Bottom_Cover'],'UNDERSIDE  |  Vented removable cover',(-95,-90,-80),(-22,0,10),(0,0,1),45,local=False)

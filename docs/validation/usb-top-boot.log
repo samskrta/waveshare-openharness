@@ -1,0 +1,12 @@
+I (546) esp_psram: Found 8MB PSRAM device
+I (546) esp_psram: Speed: 80MHz
+I (1039) esp_psram: SPI SRAM memory test OK
+I (1063) esp_psram: Adding pool of 4494K of PSRAM memory to heap allocator
+I (1064) esp_psram: Adding pool of 24K of PSRAM memory gap generated due to end address alignment of drom to the heap allocator
+I (1066) esp_psram: Reserving pool of 32K of internal memory for DMA/internal allocations
+I (1068) board: board waveshare-standard-1.75: touch=cst9217 pmic=yes rst=39/40 (ack 34,5A)
+I (2433) habitat: orientation=usb-top image=ccw90 touch=cw90
+I (2433) habitat: direct C renderer on a 466px face: two 22368-byte internal DMA buffers over 40MHz QSPI
+I (2507) CST9217: Checkcode: 0x204ECACA
+I (2509) CST9217: Resolution X: 466, Y: 466
+I (2511) CST9217: Chip Type: 0x9217, ProjectID: 0x5734

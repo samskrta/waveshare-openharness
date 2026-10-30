@@ -232,6 +232,13 @@ endif()
 # Explicit opt-in; never infer this wiring from the shared touch-controller ID.
 if(DEVICE_BOARD STREQUAL "waveshare-standard")
     target_compile_definitions(${COMPONENT_LIB} PRIVATE DEVICE_WAVESHARE_STANDARD=1)
+    # Rotate the image/touch together for a cased module mounted USB-C up.
+    # Retain an explicit escape hatch for the original left-port enclosure.
+    if(NOT DEFINED DEVICE_USB_POSITION OR DEVICE_USB_POSITION STREQUAL "top")
+        target_compile_definitions(${COMPONENT_LIB} PRIVATE DEVICE_WAVESHARE_USB_TOP=1)
+    elseif(NOT DEVICE_USB_POSITION STREQUAL "left")
+        message(FATAL_ERROR "DEVICE_USB_POSITION must be top or left")
+    endif()
 elseif(DEFINED DEVICE_BOARD AND NOT DEVICE_BOARD STREQUAL "dial")
     message(FATAL_ERROR "DEVICE_BOARD must be dial or waveshare-standard")
 endif()

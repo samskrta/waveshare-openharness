@@ -12,7 +12,7 @@ The physical device runs the board-specific firmware and connects over native US
 - ESP32-S3, 16 MB flash, 8 MB PSRAM; CO5300 AMOLED, CST9217 touch, AXP2101, ES7210 and ES8311.
 - Retained case: nominal 51 mm diameter, 12.1 mm deep.
 - Supplied 2030 Type-B 8-ohm / 2 W speaker; published 30 x 20 x 6.8 mm, measured just under 7 mm high.
-- USB-C is **left-center / 9 o'clock when the running display text is upright**. The enclosure follows that orientation.
+- USB-C exits **at the top / 12 o'clock** with the current firmware and enclosure. Rotate the complete cased unit clockwise a quarter-turn from the original left-port orientation; the firmware counter-rotates the image and maps touch to match.
 
 ## What is here
 
@@ -20,7 +20,7 @@ The physical device runs the board-specific firmware and connects over native US
 |---|---|
 | [`firmware/`](firmware) | Full OpenHarness firmware source snapshot with the Waveshare standard-board port applied |
 | [`hardware/enclosure/`](hardware/enclosure) | Editable CAD generator, assembly STEP, individual STEP/STL parts, fit coupons and geometry checks |
-| [`releases/firmware/`](releases/firmware) | The verified flashed binary set, addresses and SHA-256 manifest |
+| [`releases/firmware/`](releases/firmware) | Board-specific binary set, addresses, orientation and SHA-256 manifest |
 | [`examples/waveshare-usb-test/`](examples/waveshare-usb-test) | Minimal display, touch and USB PING/PONG bring-up application |
 | [`patches/`](patches) | Firmware port patch against the original full OpenHarness repository |
 | [`docs/validation/`](docs/validation) | Validation record and sanitized build/test/flash logs |
@@ -39,7 +39,7 @@ Activate **ESP-IDF v5.5.4** and run:
 idf.py -C firmware -B "$PWD/build/firmware" -DDEVICE_BOARD=waveshare-standard build
 ```
 
-The profile uses audio MCLK **GPIO42**, reads the PWR key through **TCA9554 P4**, and avoids probing SD pins as alternate reset lines. The device reports `waveshare-standard-1.75`, so the tested host refuses to replace it with incompatible stock dial firmware. The firmware binary retains the upstream `0.0.94` version string; the board identity and release SHA-256 manifest distinguish this port.
+The Waveshare profile defaults to `DEVICE_USB_POSITION=top`. Use `-DDEVICE_USB_POSITION=left` only for the original left-port enclosure. Rotation uses a CPU-only PSRAM strip and the existing two DMA buffers, preserving native panel addressing. The profile uses audio MCLK **GPIO42**, reads the PWR key through **TCA9554 P4**, and avoids probing SD pins as alternate reset lines. The device reports `waveshare-standard-1.75`, so the tested host refuses to replace it with incompatible stock dial firmware. The firmware binary retains the upstream `0.0.94` version string; the board identity and release SHA-256 manifest distinguish this port.
 
 Use the [firmware guide](firmware/README.md) for flashing and recovery. Save a full local flash backup before changing a new device. **Full flash backups are intentionally not committed** because they can contain settings or credentials. No eFuses or ROM-download restrictions were changed on the tested unit.
 
@@ -51,7 +51,9 @@ The temporary account permission allowing agents to start other agents was resto
 
 ## Validation and limits
 
-**Passed on actual hardware:** firmware build/flash hash checks, boot and PSRAM test, display, physical touch, native USB session, clean framed traffic, codec initialization, microphone data reaching host STT, and a live Claude reply: `Waveshare dashboard connected.`
+The [USB-top revision record](docs/validation/usb-top.md) separates the current rotation/build/flash checks from the initial bring-up evidence below.
+
+**Passed on actual hardware during initial bring-up:** firmware build/flash hash checks, boot and PSRAM test, display, physical touch, native USB session, clean framed traffic, codec initialization, microphone data reaching host STT, and a live Claude reply: `Waveshare dashboard connected.`
 
 **Passed offline:** the upstream host firmware test runner; CAD solid validity, connected parts, pairwise component clearance, and STL manifold/winding checks. The test runner's additional cJSON integration block is conditional on an activated `IDF_PATH`; see [validation details](docs/validation/README.md).
 

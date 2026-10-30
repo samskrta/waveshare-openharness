@@ -1,6 +1,6 @@
 # Validation record
 
-Validated on 2026-10-29, America/Chicago.
+Initial bring-up validated on 2026-10-29, America/Chicago. The original sections below describe that left-port image. For the current USB-top firmware and CAD, see [USB-top revision](usb-top.md).
 
 ## Firmware and hardware
 
@@ -30,6 +30,6 @@ The enclosure has **not** been printed or physically fitted. Fit coupons only ch
 
 ## Scope / provenance
 
-The firmware binary set is the hardware-validated port from the original checkout. The source copied here matches that snapshot; moving the subtree is not a new firmware build. Native host source was inspected and built during bring-up, then retired in favor of the official desktop/daemon. Only the focused firmware subtree and its patch are carried here.
+The initial firmware binary set was the hardware-validated port from the original checkout. The current set adds USB-top orientation and was rebuilt; the new source receipt and revision record distinguish it from the original snapshot. Native host source was inspected and built during bring-up, then retired in favor of the official desktop/daemon. Only the focused firmware subtree and its patch are carried here.
 
 Implementation, firmware checks, hardware acceptance, mechanical generation and repository publication were separate steps. No upstream merge or upstream release was performed. Temporary engine and Harness sign-in waits were part of the elapsed setup, not build time. Private account state and raw factory flash are excluded.

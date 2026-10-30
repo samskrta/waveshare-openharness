@@ -15,6 +15,7 @@ P={
  'speaker_pocket_width':30.8,'speaker_pocket_height':20.8,'speaker_corner_radius':2.0,
  'speaker_center_y':4.5,'speaker_back_z':-21.2,
  'usb_window_width':16.0,'usb_window_height':11.0,'usb_window_depth':5.0,
+ 'module_rotation_deg':-90.0, # local XY: former left port now points up (+Y)
  'pilot_diameter':1.7,'clearance_diameter':2.3,'bezel_thickness':2.2,
  'floor_thickness':2.4,'base_radius':24.0,'rear_cavity_radius':23.7,
 }
@@ -64,20 +65,23 @@ inner_front=cq.Workplane(PLANE).circle(28.776).val()
 inner_envelope=cq.Solid.makeLoft([inner_bottom,inner_mid,inner_front],ruled=True)
 rear=healed(rear.intersect(inner_envelope))
 body=cut(body,local(rear))
-# Three front fasteners; avoid the left USB/mics and right button cutouts.
-BEZEL_ANGLES=[60,120,270]
+# Rotate the mounting pattern with the module access openings, not the tilted
+# body/desk plane or speaker. Local +Y is the top of the upright dashboard.
+def module_angle(a): return a+P['module_rotation_deg']
+BEZEL_ANGLES=[module_angle(a) for a in [60,120,270]]
 for a in BEZEL_ANGLES:
  x=28.3*math.cos(math.radians(a)); y=28.3*math.sin(math.radians(a))
  body=fuse(body,cyl(2.8,8,-8,x,y))
  body=cut(body,cyl(P['pilot_diameter']/2,8.2,-8.1,x,y))
 body=cut(body,case_void)
-# Cased-unit side access. Left is 9 o'clock viewed with the text upright.
-body=radial_window(body,180,P['usb_window_width'],P['usb_window_height'],-P['usb_window_depth'])
-for a in [146,214]: body=radial_window(body,a,6,6,-4.5)
-for a in [-34,34]: body=radial_window(body,a,10.5,9,-7.0)
-body=radial_window(body,0,16,5,-3.8)
+# Rotate the entire cased unit clockwise as viewed from the front: USB at 12,
+# microSD at 6, mics on upper diagonals and PWR/BOOT on lower diagonals.
+body=radial_window(body,module_angle(180),P['usb_window_width'],P['usb_window_height'],-P['usb_window_depth'])
+for a in [146,214]: body=radial_window(body,module_angle(a),6,6,-4.5)
+for a in [-34,34]: body=radial_window(body,module_angle(a),10.5,9,-7.0)
+body=radial_window(body,module_angle(0),16,5,-3.8)
 # Wire relief through the rear annular seat.
-body=cut(body,box(12,7,5,(22,4.5,-13.1)))
+body=cut(body,box(12,7,5,(22,4.5,-13.1)).rotate((0,0,0),(0,0,1),P['module_rotation_deg']))
 # Speaker cradle screws/rails are joined to the wall, not floating bosses.
 for sign in [-1,1]:
  x=sign*18.3
@@ -95,8 +99,8 @@ for a in BASE_ANGLES:
 body=healed(body)
 
 bezel=cut(cyl(31.176,2.2,0),cyl(P['front_aperture']/2,3,-.4))
-# Open the left bezel edge too, so a cable overmold can reach the recessed port.
-bezel=radial_window(bezel,180,P['usb_window_width'],4,1.1)
+# Open the top bezel edge too, so a cable overmold can reach the recessed port.
+bezel=radial_window(bezel,module_angle(180),P['usb_window_width'],4,1.1)
 for a in BEZEL_ANGLES:
  x=28.3*math.cos(math.radians(a)); y=28.3*math.sin(math.radians(a))
  bezel=cut(bezel,cyl(1.15,3,-.1,x,y))

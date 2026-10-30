@@ -1,4 +1,5 @@
 #include "runtime.h"
+#include "orientation.h"
 #include "touch.h"
 #include "display.h"
 #include "board.h"
@@ -88,6 +89,9 @@ static void task(void *arg)
                 trusted = false;
             }
             if (down) {
+#ifdef DEVICE_WAVESHARE_USB_TOP
+                display_orient_touch(&x, &y);
+#endif
                 last_good = now;
                 last_x = x;
                 last_y = y;

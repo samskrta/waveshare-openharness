@@ -6,8 +6,8 @@
   "hw": "waveshare-standard-1.75",
   "firmware_version": "0.0.94",
   "sha256": {
-    "app.bin": "7cba894d1d486be11f5da846a855765e70f32210e587b0966f6900290e042a46",
-    "bootloader.bin": "1c688b0a5b9fa9b21c6680fb013fcd828dddb1d631251f3b850bd8e5348995e3",
+    "app.bin": "3e8192a1315a21d7a9ff09113416aed6e123e7b27594f4b1f084f9625831d40c",
+    "bootloader.bin": "a86d2d9a650b3fae0ed837adf83815e9e8509407e41ee49afc538d00b007e230",
     "partition-table.bin": "a8601f9bbcb818c72ba03680130b0c5a97441a18a4af66499637fdabaf20cd79",
     "ota-data.bin": "7d2c7ac4888bfd75cd5f56e8d61f69595121183afc81556c876732fd3782c62f"
   },
@@ -16,5 +16,10 @@
     "partition-table.bin": "0x8000",
     "ota-data.bin": "0xf000",
     "app.bin": "0x20000"
-  }
+  },
+  "usb_position": "top",
+  "image_rotation": "counterclockwise 90 degrees from native",
+  "touch_rotation": "clockwise 90 degrees after native calibration",
+  "source_receipt": "../../firmware/PORT_SOURCE.json",
+  "build_date": "2026-10-30"
 }

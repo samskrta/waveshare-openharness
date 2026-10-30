@@ -2,7 +2,7 @@
 
 **Prototype: CAD and mesh checks passed; no physical print/fit test has been performed. Print both fit coupons before the full housing.**
 
-This enclosure retains the stock protective case on the Waveshare ESP32-S3-Touch-AMOLED-1.75-B sold in [the linked Amazon listing](https://www.amazon.com/dp/B0F8868KK8). It accommodates the supplied rounded 2030 Type-B speaker. Orient the unit with the current display text upright: **USB-C at 9 o'clock / left-center**, microSD access at the right, and PWR/BOOT access on the right-hand diagonals.
+This enclosure retains the stock protective case on the Waveshare ESP32-S3-Touch-AMOLED-1.75-B sold in [the linked Amazon listing](https://www.amazon.com/dp/B0F8868KK8). It accommodates the supplied rounded 2030 Type-B speaker. Use the USB-top firmware and install the cased module with **USB-C at 12 o'clock / top-center**, microSD access at the bottom, microphones on the upper diagonals, and PWR/BOOT on the lower diagonals. This turns the module clockwise 90 degrees from the first left-port enclosure; the firmware keeps the dashboard upright and touch aligned.
 
 The enclosure was remodeled from the round, tilted form and dimensions of the Autonomous OpenHarness STEP housing. It is larger and has new mounting internals. The original imported trimmed/offset surfaces failed modification booleans, so this version uses clean parametric lofts rather than claiming to preserve every original surface. The original STEP is retained under `source/` for provenance.
 
@@ -15,7 +15,7 @@ Print **one of each** from `stl/`:
 | Part | Function |
 |---|---|
 | Housing_Waveshare_Cased | Main shell, cased-module seat, speaker rails, side access |
-| Front_Bezel | Removable retaining bezel; cable clearance notch on the left |
+| Front_Bezel | Removable retaining bezel; cable clearance notch at the top |
 | Speaker_Cradle | Rounded speaker pocket, protected rim supports, grille and wire exit |
 | Speaker_Strap | Holds the speaker's closed back; does not press its diaphragm |
 | Bottom_Cover | Removable vented underside |
@@ -35,14 +35,14 @@ STLs and individual STEPs use print orientation in millimeters. The combined `st
 | Speaker nominal body | 30 x 20 x 7.0 mm, rounded corners |
 | Speaker pocket | 30.8 x 20.8 mm, R2 internal corners |
 | Speaker retained depth | 7.2 mm between rim seats and strap |
-| Left USB body relief | 16 mm tangential width x 11 mm axial height |
+| Top USB body relief | 16 mm tangential width x 11 mm axial height |
 | Base cover | 48 mm diameter x 2.4 mm thickness |
 | Display plane | 26 degrees above the desk plane |
 | Main front diameter | About 62.4 mm; wider belly about 63 mm |
 
 The supplied speaker's published working height is 6.8 +/- 0.3 mm; the user measured just under 7 mm. The 7.0 mm reference body is a conservative nominal envelope, not a scanned speaker. Its rim is supported above the grille; the acoustic face points toward the underside plenum. The cable exits on the right side of the cradle and has a relief opening.
 
-The cased-unit drawing specifies the overall diameter/depth but does not fully dimension every port center. USB orientation was confirmed on the physical running unit by the user. Mic, button and microSD openings follow the rotated drawing layout with generous relief. **Their final alignment, the USB cable overmold, and component depth/stack must still be physically checked.** No PCB, connector or antenna model is claimed as a complete exact solid in the assembly.
+The cased-unit drawing specifies the overall diameter/depth but does not fully dimension every port center. The original left-port orientation was confirmed on the physical unit by the user; this revision rotates all module access openings, the front screw pattern and rear module wire relief together by a quarter-turn. The speaker cradle, strap, bottom cover and fit coupons retain their dimensions/positions. Mic, button and microSD openings follow the rotated drawing layout with generous relief. **Their final alignment, the USB cable overmold, and component depth/stack must still be physically checked.** No PCB, connector or antenna model is claimed as a complete exact solid in the assembly.
 
 ## Hardware
 
@@ -61,7 +61,7 @@ Starting point: PETG, 0.4 mm nozzle, 0.2 mm layers, 4 perimeters, 4-5 top/bottom
 1. Print and check both coupons. Do not force either component into a tight print; adjust clearances first.
 2. Place the speaker in its cradle with the acoustic face toward the cradle grille and its closed back toward the strap. Route its leads through the right-hand relief.
 3. With the display out, install cradle and strap on the two internal rails using the countersunk screws. Do not clamp the diaphragm. Route the leads to the existing speaker connector without pinching or tension.
-4. Pad the outer case seat lightly. Insert the complete cased module from the front, aligning USB-C to the left cutout. Keep the PCB, antennas and rear connectors clear.
+4. Pad the outer case seat lightly. Insert the complete cased module from the front, aligning USB-C to the top cutout. Keep the PCB, antennas and rear connectors clear.
 5. Fit the C-shaped front bezel, with its notch at the USB side. Confirm the cable can fully seat, then secure the three bezel screws gently. The bezel retains the protective case rim rather than loading the glass.
 6. Check PWR/BOOT, microphone and card access before closing. Attach the bottom cover and rubber feet. Verify touch, USB and speaker operation again after assembly.
 
@@ -76,7 +76,7 @@ python source/check_meshes.py
 python source/render_preview.py
 ```
 
-The script's parameter table controls the fit dimensions; some mounting geometry is specific to this layout. Treat larger parameter changes as a redesign and recheck the complete assembly. The generator rejects invalid/disconnected solids and material interference above 0.03 mm^3. The mesh checker requires watertight, consistently wound, single-component STL parts. `validation.json` records dimensions, volumes, mesh results and pairwise assembly checks.
+The `module_rotation_deg=-90` parameter maps the original left-port layout to the top-port layout in local CAD coordinates (+Y is up). The tilted desk body is not rotated. Do not mix the new housing with an old bezel: their three retaining screw positions differ. The script's parameter table controls the fit dimensions; some mounting geometry is specific to this layout. Treat larger parameter changes as a redesign and recheck the complete assembly. The generator rejects invalid/disconnected solids and material interference above 0.03 mm^3. The mesh checker requires watertight, consistently wound, single-component STL parts. `validation.json` records dimensions, volumes, mesh results and pairwise assembly checks.
 
 The current reference assembly has zero calculated material overlap. These checks do not establish physical fit, acoustic performance, minimum wall strength, cable strain resistance or print durability.
 

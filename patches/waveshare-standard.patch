@@ -1,8 +1,7 @@
 diff --git a/devices/harness-device/firmware/main/CMakeLists.txt b/devices/harness-device/firmware/main/CMakeLists.txt
-index 04e6561..1efbd1f 100644
 --- a/devices/harness-device/firmware/main/CMakeLists.txt
 +++ b/devices/harness-device/firmware/main/CMakeLists.txt
-@@ -227,3 +227,11 @@ if(DEVICE_RENDER_STRESS)
+@@ -227,3 +227,18 @@
      endif()
      target_compile_definitions(${COMPONENT_LIB} PRIVATE DEVICE_RENDER_STRESS=1)
  endif()
@@ -11,11 +10,17 @@ index 04e6561..1efbd1f 100644
 +# Explicit opt-in; never infer this wiring from the shared touch-controller ID.
 +if(DEVICE_BOARD STREQUAL "waveshare-standard")
 +    target_compile_definitions(${COMPONENT_LIB} PRIVATE DEVICE_WAVESHARE_STANDARD=1)
++    # Rotate the image/touch together for a cased module mounted USB-C up.
++    # Retain an explicit escape hatch for the original left-port enclosure.
++    if(NOT DEFINED DEVICE_USB_POSITION OR DEVICE_USB_POSITION STREQUAL "top")
++        target_compile_definitions(${COMPONENT_LIB} PRIVATE DEVICE_WAVESHARE_USB_TOP=1)
++    elseif(NOT DEVICE_USB_POSITION STREQUAL "left")
++        message(FATAL_ERROR "DEVICE_USB_POSITION must be top or left")
++    endif()
 +elseif(DEFINED DEVICE_BOARD AND NOT DEVICE_BOARD STREQUAL "dial")
 +    message(FATAL_ERROR "DEVICE_BOARD must be dial or waveshare-standard")
 +endif()
 diff --git a/devices/harness-device/firmware/main/app_main.c b/devices/harness-device/firmware/main/app_main.c
-index 1814868..2ccb722 100644
 --- a/devices/harness-device/firmware/main/app_main.c
 +++ b/devices/harness-device/firmware/main/app_main.c
 @@ -24,6 +24,7 @@
@@ -26,7 +31,7 @@ index 1814868..2ccb722 100644
  #include "board/board_probe.h"
  #include "driver/gpio.h"
  #include "esp_heap_caps.h"
-@@ -181,6 +182,9 @@ void app_main(void)
+@@ -181,6 +182,9 @@
      ram_telemetry_checkpoint("boot");
      last_words_boot();   // before the first log line, so the previous boot's ring is read, not overwritten
      board_detect();      // which dial this is — the panel's reset pin comes from here, so before display_init
@@ -37,10 +42,9 @@ index 1814868..2ccb722 100644
  
      if (boot_button_held()) {
 diff --git a/devices/harness-device/firmware/main/board/board.c b/devices/harness-device/firmware/main/board/board.c
-index 74878f1..9c77521 100644
 --- a/devices/harness-device/firmware/main/board/board.c
 +++ b/devices/harness-device/firmware/main/board/board.c
-@@ -14,7 +14,12 @@ static const char *TAG = "board";
+@@ -14,7 +14,12 @@
  
  // Until board_detect() runs: the dial this code grew up on.
  static board_t s_board = {
@@ -54,7 +58,7 @@ index 74878f1..9c77521 100644
      .touch = TOUCH_CST9217, .touch_mirror = true, .has_pmic = true,
  };
  static bool s_detected;
-@@ -59,11 +64,22 @@ void board_detect(void)
+@@ -59,11 +64,22 @@
      bool touch_seen = false;
      for (int i = 0; i < n; i++) touch_seen |= (acks[i] == 0x5A || acks[i] == 0x15);
      if (!touch_seen) {
@@ -79,7 +83,6 @@ index 74878f1..9c77521 100644
      for (int i = 0; i < n; i++) p += snprintf(list + p, sizeof list - p, "%s%02X", i ? "," : "", acks[i]);
      ESP_LOGI(TAG, "%s (ack %s)", board_describe(), n ? list : "none");
 diff --git a/devices/harness-device/firmware/main/board/pins_dial.h b/devices/harness-device/firmware/main/board/pins_dial.h
-index 0978914..746850a 100644
 --- a/devices/harness-device/firmware/main/board/pins_dial.h
 +++ b/devices/harness-device/firmware/main/board/pins_dial.h
 @@ -33,7 +33,11 @@
@@ -96,7 +99,6 @@ index 0978914..746850a 100644
  #define BSP_I2S_WS           45
  #define BSP_I2S_DOUT         8            // codec → ESP (mic data in to ESP)
 diff --git a/devices/harness-device/firmware/main/board/power.c b/devices/harness-device/firmware/main/board/power.c
-index 8993b52..ca44da8 100644
 --- a/devices/harness-device/firmware/main/board/power.c
 +++ b/devices/harness-device/firmware/main/board/power.c
 @@ -8,6 +8,18 @@
@@ -118,7 +120,7 @@ index 8993b52..ca44da8 100644
  
  // AXP2101 registers we touch.
  #define AXP_REG_STATUS0   0x00   // PMU status: VBUS/battery presence + current direction
-@@ -23,19 +35,38 @@ static i2c_master_dev_handle_t s_dev;
+@@ -23,19 +35,38 @@
  #define AXP_PKEY_PRESS    (1 << 1)
  
  static int  axp_read(uint8_t reg);
@@ -157,7 +159,7 @@ index 8993b52..ca44da8 100644
  }
  
  bool power_init(void)
-@@ -73,19 +104,30 @@ static int axp_read(uint8_t reg)
+@@ -73,19 +104,30 @@
  }
  
  // Write one AXP2101 register; returns ESP_OK on success.
@@ -188,3 +190,190 @@ index 8993b52..ca44da8 100644
  }
  
  int power_battery_pct(void)
+diff --git a/devices/harness-device/firmware/main/ui/habitat/display_habitat.c b/devices/harness-device/firmware/main/ui/habitat/display_habitat.c
+--- a/devices/harness-device/firmware/main/ui/habitat/display_habitat.c
++++ b/devices/harness-device/firmware/main/ui/habitat/display_habitat.c
+@@ -1,6 +1,7 @@
+ #include "illustrated.h"
+ // Direct text -> RGB565 -> QSPI DMA. No LVGL initialization or object pool.
+ #include "runtime.h"
++#include "orientation.h"
+ #include "perf_bench.h"
+ #ifdef DEVICE_LAYOUT_BENCH
+ #include "layout_bench.h"
+@@ -43,6 +44,11 @@
+ static SemaphoreHandle_t model_lock, dma_done;
+ static TaskHandle_t renderer;
+ static uint16_t *pixels[2];
++#ifdef DEVICE_WAVESHARE_USB_TOP
++// One CPU-only PSRAM strip; the original two internal DMA buffers retain their
++// ownership/fence rules. No full framebuffer or panel MADCTL assumptions.
++static uint16_t *raster_pixels;
++#endif
+ static ht_scene_t scenes[2];
+ static bool painted;
+ static atomic_bool asleep, force_frame;
+@@ -275,10 +281,19 @@
+             ht_rect_t strip = {rect.x, y, rect.w, h};
+             int64_t t = esp_timer_get_time();
+             render_progress(RENDER_RASTER);
++#ifdef DEVICE_WAVESHARE_USB_TOP
++            uint16_t *raster = raster_pixels;
++#else
++            uint16_t *raster = pixels[buffer];
++#endif
+ #ifdef DEVICE_LAYOUT_BENCH
+-            ht_layout_raster(next, strip, pixels[buffer]);
++            ht_layout_raster(next, strip, raster);
+ #else
+-            ht_raster(next, strip, pixels[buffer]);
++            ht_raster(next, strip, raster);
++#endif
++            ht_rect_t target = strip;
++#ifdef DEVICE_WAVESHARE_USB_TOP
++            target = display_orient_pixels(strip, raster, pixels[buffer]);
+ #endif
+             raster_us += (uint32_t)(esp_timer_get_time() - t);
+             // CPU prepares B while DMA owns A. Neither buffer is reused before the ISR fence.
+@@ -286,7 +301,8 @@
+                 wait_dma();
+             ui_perf_flush((size_t)rect.w * h * 2);
+             render_progress(RENDER_SUBMIT);
+-            ESP_ERROR_CHECK(esp_lcd_panel_draw_bitmap(panel, rect.x, y, rect.x + rect.w, y + h,
++            ESP_ERROR_CHECK(esp_lcd_panel_draw_bitmap(panel, target.x, target.y,
++                                                      target.x + target.w, target.y + target.h,
+                                                       pixels[buffer]));
+             pending = true;
+             buffer ^= 1;
+@@ -476,6 +492,12 @@
+     ESP_ERROR_CHECK(esp_lcd_panel_reset(panel));
+     ESP_ERROR_CHECK(esp_lcd_panel_init(panel));
+     ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel, true));
++#ifdef DEVICE_WAVESHARE_USB_TOP
++    raster_pixels = heap_caps_malloc(HT_WIDTH * STRIP_LINES * 2,
++                                     MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
++    assert(raster_pixels);
++    ESP_LOGI("habitat", "orientation=usb-top image=ccw90 touch=cw90");
++#endif
+     for (int i = 0; i < 2; i++) {
+         pixels[i] =
+             heap_caps_malloc(HT_WIDTH * STRIP_LINES * 2, MALLOC_CAP_INTERNAL | MALLOC_CAP_DMA);
+diff --git a/devices/harness-device/firmware/main/ui/habitat/orientation.h b/devices/harness-device/firmware/main/ui/habitat/orientation.h
+new file mode 100644
+--- /dev/null
++++ b/devices/harness-device/firmware/main/ui/habitat/orientation.h
+@@ -0,0 +1,22 @@
++// The cased Waveshare module turns clockwise 90 degrees to put USB-C at the top.
++// Keep the CO5300's native addressing/gap; rotate each damage strip before DMA.
++// Touch uses the inverse mapping AFTER the controller's existing calibration.
++#pragma once
++#include "terminal.h"
++
++static inline ht_rect_t display_orient_pixels(ht_rect_t r, const uint16_t *src, uint16_t *dst)
++{
++    // Logical -> native: (x, y) -> (y, 465-x), a counterclockwise image turn.
++    // RGB565 words (including their on-wire byte order) are copied unchanged.
++    for (int y = 0; y < r.h; y++)
++        for (int x = 0; x < r.w; x++)
++            dst[(r.w - 1 - x) * r.h + y] = src[y * r.w + x];
++    return (ht_rect_t){r.y, HT_WIDTH - r.x - r.w, r.h, r.w};
++}
++
++static inline void display_orient_touch(uint16_t *x, uint16_t *y)
++{
++    uint16_t native_x = *x;
++    *x = HT_WIDTH - 1 - *y;
++    *y = native_x;
++}
+diff --git a/devices/harness-device/firmware/main/ui/habitat/touch_habitat.c b/devices/harness-device/firmware/main/ui/habitat/touch_habitat.c
+--- a/devices/harness-device/firmware/main/ui/habitat/touch_habitat.c
++++ b/devices/harness-device/firmware/main/ui/habitat/touch_habitat.c
+@@ -1,4 +1,5 @@
+ #include "runtime.h"
++#include "orientation.h"
+ #include "touch.h"
+ #include "display.h"
+ #include "board.h"
+@@ -88,6 +89,9 @@
+                 trusted = false;
+             }
+             if (down) {
++#ifdef DEVICE_WAVESHARE_USB_TOP
++                display_orient_touch(&x, &y);
++#endif
+                 last_good = now;
+                 last_x = x;
+                 last_y = y;
+diff --git a/devices/harness-device/firmware/test/run.sh b/devices/harness-device/firmware/test/run.sh
+--- a/devices/harness-device/firmware/test/run.sh
++++ b/devices/harness-device/firmware/test/run.sh
+@@ -18,6 +18,10 @@
+ python3 "$here/../scripts/gen_tux_moods.py" --check
+ python3 "$here/../scripts/gen_pets.py" --check
+ python3 "$here/../scripts/gen_arc_geometry.py" --check
++
++cc -std=c11 -Wall -Wextra -Werror -O1 -g -fsanitize="${SANITIZERS:-undefined,bounds}" \
++   -I "$here/../main/ui/habitat" -o "$out/test_orientation" "$here/test_orientation.c"
++"$out/test_orientation"
+ 
+ cc -std=c11 -Wall -Wextra -Werror -O1 -g -fsanitize="${SANITIZERS:-undefined,bounds}" \
+    -I "$here/../main" -o "$out/test_character" "$here/test_character.c" "$here/../main/pet_store.c" "$here/../main/elapsed.c" \
+diff --git a/devices/harness-device/firmware/test/test_orientation.c b/devices/harness-device/firmware/test/test_orientation.c
+new file mode 100644
+--- /dev/null
++++ b/devices/harness-device/firmware/test/test_orientation.c
+@@ -0,0 +1,54 @@
++// Reassemble partial DMA strips and prove that touch maps every native pixel
++// back to the logical pixel painted there, including the 465/466 boundaries.
++#include "orientation.h"
++#include <assert.h>
++#include <stdio.h>
++#include <stdlib.h>
++
++static uint16_t native[HT_WIDTH * HT_HEIGHT];
++static uint16_t src[HT_WIDTH * 24], dst[HT_WIDTH * 24 + 2];
++
++static uint16_t value(int x, int y) { return (uint16_t)(x * 131 + y * 37); }
++static void paint_rect(ht_rect_t r)
++{
++    for (int y = 0; y < r.h; y++)
++        for (int x = 0; x < r.w; x++)
++            src[y*r.w+x] = value(r.x+x, r.y+y);
++    dst[0] = 0x1234;
++    dst[r.w*r.h+1] = 0x5678;
++    ht_rect_t out = display_orient_pixels(r, src, dst+1);
++    assert(dst[0] == 0x1234 && dst[r.w*r.h+1] == 0x5678);
++    assert(out.x >= 0 && out.y >= 0);
++    assert(out.x+out.w <= HT_WIDTH && out.y+out.h <= HT_HEIGHT);
++    for (int y = 0; y < out.h; y++)
++        for (int x = 0; x < out.w; x++) {
++            int nx = out.x+x, ny = out.y+y;
++            uint16_t tx = nx, ty = ny;
++            display_orient_touch(&tx, &ty);
++            assert(tx >= r.x && tx < r.x+r.w && ty >= r.y && ty < r.y+r.h);
++            assert(dst[1+y*out.w+x] == value(tx, ty));
++            native[ny*HT_WIDTH+nx] = dst[1+y*out.w+x];
++        }
++}
++int main(void)
++{
++    for (int y = 0; y < HT_HEIGHT; y += 24)
++        paint_rect((ht_rect_t){0, y, HT_WIDTH, HT_HEIGHT-y < 24 ? HT_HEIGHT-y : 24});
++    // Native left center becomes logical top center, where USB now exits.
++    uint16_t x = 0, y = 233;
++    display_orient_touch(&x, &y);
++    assert(x == 232 && y == 0);
++    for (int ny = 0; ny < HT_HEIGHT; ny++)
++        for (int nx = 0; nx < HT_WIDTH; nx++)
++            assert(native[ny*HT_WIDTH+nx] == value(HT_WIDTH-1-ny, nx));
++    // Nonzero offsets, skinny edge updates and small edits taller than 24 rows.
++    paint_rect((ht_rect_t){465, 0, 1, 466});
++    paint_rect((ht_rect_t){0, 465, 466, 1});
++    paint_rect((ht_rect_t){37, 71, 17, 83});
++    srand(1);
++    for (int n = 0; n < 1000; n++) {
++        int w = 1+rand()%466, h = 1+rand()%24;
++        paint_rect((ht_rect_t){rand()%(467-w), rand()%(467-h), w, h});
++    }
++    puts("orientation: PASS (full frame, partial damage, edges, buffer guards and inverse touch)");
++}

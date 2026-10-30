@@ -1,6 +1,7 @@
 #include "illustrated.h"
 // Direct text -> RGB565 -> QSPI DMA. No LVGL initialization or object pool.
 #include "runtime.h"
+#include "orientation.h"
 #include "perf_bench.h"
 #ifdef DEVICE_LAYOUT_BENCH
 #include "layout_bench.h"
@@ -43,6 +44,11 @@ static esp_lcd_panel_handle_t panel;
 static SemaphoreHandle_t model_lock, dma_done;
 static TaskHandle_t renderer;
 static uint16_t *pixels[2];
+#ifdef DEVICE_WAVESHARE_USB_TOP
+// One CPU-only PSRAM strip; the original two internal DMA buffers retain their
+// ownership/fence rules. No full framebuffer or panel MADCTL assumptions.
+static uint16_t *raster_pixels;
+#endif
 static ht_scene_t scenes[2];
 static bool painted;
 static atomic_bool asleep, force_frame;
@@ -275,10 +281,19 @@ static uint32_t paint(const ht_scene_t *next, const ht_damage_t *damage)
             ht_rect_t strip = {rect.x, y, rect.w, h};
             int64_t t = esp_timer_get_time();
             render_progress(RENDER_RASTER);
-#ifdef DEVICE_LAYOUT_BENCH
-            ht_layout_raster(next, strip, pixels[buffer]);
+#ifdef DEVICE_WAVESHARE_USB_TOP
+            uint16_t *raster = raster_pixels;
 #else
-            ht_raster(next, strip, pixels[buffer]);
+            uint16_t *raster = pixels[buffer];
+#endif
+#ifdef DEVICE_LAYOUT_BENCH
+            ht_layout_raster(next, strip, raster);
+#else
+            ht_raster(next, strip, raster);
+#endif
+            ht_rect_t target = strip;
+#ifdef DEVICE_WAVESHARE_USB_TOP
+            target = display_orient_pixels(strip, raster, pixels[buffer]);
 #endif
             raster_us += (uint32_t)(esp_timer_get_time() - t);
             // CPU prepares B while DMA owns A. Neither buffer is reused before the ISR fence.
@@ -286,7 +301,8 @@ static uint32_t paint(const ht_scene_t *next, const ht_damage_t *damage)
                 wait_dma();
             ui_perf_flush((size_t)rect.w * h * 2);
             render_progress(RENDER_SUBMIT);
-            ESP_ERROR_CHECK(esp_lcd_panel_draw_bitmap(panel, rect.x, y, rect.x + rect.w, y + h,
+            ESP_ERROR_CHECK(esp_lcd_panel_draw_bitmap(panel, target.x, target.y,
+                                                      target.x + target.w, target.y + target.h,
                                                       pixels[buffer]));
             pending = true;
             buffer ^= 1;
@@ -476,6 +492,12 @@ void display_init(void)
     ESP_ERROR_CHECK(esp_lcd_panel_reset(panel));
     ESP_ERROR_CHECK(esp_lcd_panel_init(panel));
     ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel, true));
+#ifdef DEVICE_WAVESHARE_USB_TOP
+    raster_pixels = heap_caps_malloc(HT_WIDTH * STRIP_LINES * 2,
+                                     MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+    assert(raster_pixels);
+    ESP_LOGI("habitat", "orientation=usb-top image=ccw90 touch=cw90");
+#endif
     for (int i = 0; i < 2; i++) {
         pixels[i] =
             heap_caps_malloc(HT_WIDTH * STRIP_LINES * 2, MALLOC_CAP_INTERNAL | MALLOC_CAP_DMA);
