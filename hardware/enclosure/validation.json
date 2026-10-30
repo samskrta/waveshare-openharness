@@ -23,7 +23,7 @@
     "face_tilt_deg": 26.0,
     "usb_slot_width": 14.0,
     "usb_slot_height": 7.0,
-    "usb_center_depth": 5.3,
+    "usb_center_depth": 10.3,
     "usb_corner_radius": 2.0,
     "usb_plug_reference_width": 13.4,
     "usb_plug_reference_height": 6.4,
@@ -47,7 +47,7 @@
     "Housing_Waveshare_Cased": {
       "valid": true,
       "solids": 1,
-      "volume_mm3": 9276.507851093187,
+      "volume_mm3": 9285.640732807075,
       "bounds_mm": [
         63.81356387916837,
         63.80957807610196,
@@ -57,8 +57,8 @@
         "watertight": true,
         "consistent_winding": true,
         "components": 1,
-        "triangles": 163402,
-        "volume_mm3": 9272.39089769416,
+        "triangles": 163444,
+        "volume_mm3": 9281.512263701336,
         "bounds_mm": [
           [
             -55.89469909667969,
@@ -76,18 +76,18 @@
     "Base_Carrier": {
       "valid": true,
       "solids": 1,
-      "volume_mm3": 10080.805514752876,
+      "volume_mm3": 10046.328627839133,
       "bounds_mm": [
         60.85534180295926,
         60.855341802959266,
-        27.888352937853753
+        27.481435126624245
       ],
       "mesh": {
         "watertight": true,
         "consistent_winding": true,
         "components": 1,
-        "triangles": 25782,
-        "volume_mm3": 10078.838154095254,
+        "triangles": 26294,
+        "volume_mm3": 10044.419796478764,
         "bounds_mm": [
           [
             -30.42120933532715,
@@ -97,7 +97,7 @@
           [
             30.42120933532715,
             30.42120933532715,
-            27.877676010131836
+            27.47075653076172
           ]
         ]
       }
@@ -192,27 +192,27 @@
     "USB_Rim_Fit_Coupon": {
       "valid": true,
       "solids": 1,
-      "volume_mm3": 4022.3025579874648,
+      "volume_mm3": 4103.76395061233,
       "bounds_mm": [
-        63.03275930284456,
-        63.03275930284457,
+        63.03275816391805,
+        62.24530022550778,
         11.012847403642503
       ],
       "mesh": {
         "watertight": true,
         "consistent_winding": true,
         "components": 1,
-        "triangles": 152032,
-        "volume_mm3": 4020.524178873287,
+        "triangles": 151526,
+        "volume_mm3": 4101.959316183357,
         "bounds_mm": [
           [
-            -31.506458282470703,
+            -31.50645637512207,
             -31.506458282470703,
             -1.2434497875801753e-14
           ],
           [
-            31.506458282470703,
-            31.506458282470703,
+            31.50645637512207,
+            30.718997955322266,
             11.0
           ]
         ]
