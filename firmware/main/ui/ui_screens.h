@@ -256,7 +256,8 @@ void ui_swarms_replace(const cable_swarm_t *rows, int count, const char *selecte
 // --- The Swarms (Super Tabs; cable_client.h). Each is safe from the reader task. ---
 // The `supertabs` list: the Swarms shown, in order. A Swarm gone from it leaves the list and the inbox.
 void ui_supertabs_ids(const char ids[][ID_MAX], int n);
-// One Swarm's card. True for a fresh off-face actionable transition eligible for the waiting cue.
+// One Swarm's card. True for a fresh actionable transition eligible for the waiting cue; Nap and an open
+// question-reading view remain silent. An already-visible Lead is marked read without a redundant wake.
 bool ui_supertab(const ht_supertab_t *in);
 // `chat_id`: the chat the text is the last message of, "" from a daemon without swarmChat. Dropped for another chat.
 void ui_supertab_recap(const char *tab, const char *lead, const char *chat_id, const char *text, uint32_t at, bool none);
@@ -267,7 +268,7 @@ bool ui_supertab_notice(const char *tab, const char *lead, ht_chat_kind_t chat, 
 // The desktop opened that chat (`supertab.notice.read`): the entry goes.
 void ui_supertab_notice_read(const char *tab, const char *lead, const char *chat_id);
 // A Super Tab wait from harness `agent_id` (some Lead's `local`). It only sets that Lead's inbox text and face;
-// it never opens the question screen. True when eligible for the waiting cue.
+// it never opens the question screen. True when eligible for the waiting cue; Nap and question reading stay silent.
 bool ui_supertab_wait(const char *agent_id, const char *request, const char *swarm_name, bool stuck, const char *text);
 void ui_supertab_wait_close(const char *agent_id, const char *request);
 // Link lost: forget every Swarm and its inbox entries.
@@ -469,7 +470,8 @@ void ui_project_set_agents(const char *project_id, const struct cJSON *agents);
 // Also records it behind the bell: a blocked agent is counted, and stays counted until the question is
 // ANSWERED rather than until somebody looks at it. Not gated on the window having the agent on screen —
 // showing a question asks the window to bring it forward, so that gate could never open.
-// True when waiting audio is eligible: off-face, awake from Nap, and not while another question is being read.
+// True when waiting audio is eligible: awake from Nap and not while another question is being read. An
+// already-visible agent is marked read without a redundant display wake, but the fresh cue still sounds.
 bool ui_question_show(const char *project_id, const char *agent_name, const char *machine, const char *request_id, const struct cJSON *questions);
 // That question was answered somewhere else (the app, or the pane by hand) — leave the screen instead of
 // waiting for an answer that can no longer be delivered. No-op unless THIS request is the one on screen.

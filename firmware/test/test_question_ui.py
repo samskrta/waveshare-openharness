@@ -244,10 +244,14 @@ int main(int argc,char **argv) {
     // does wake the display, and it still counts in the bell until it is answered.
     reset(false);view(HOME);wakes=0;notices=0;
     assert(ui_question_show("b","Other","M2","q-b2",NULL) && s.view==HOME && wakes==1 && notices==1 && !read_now);
-    // The pane on the face already shows its question: still filed, but read at once, no wake, no beep.
+    // The pane on the face already shows its question: still filed and read at once, with no redundant
+    // wake. It remains audible because seeing an agent face is not the same as reading the question UI.
     wakes=0;notices=0;face_agent="b";
-    assert(!ui_question_show("b","Other","M2","q-b3",NULL) && wakes==0 && notices==1 && read_now==1);
+    assert(ui_question_show("b","Other","M2","q-b3",NULL) && wakes==0 && notices==1 && read_now==1);
     face_agent="";
+    s.view=QUESTION;
+    assert(!ui_question_show("b","Other","M2","q-reading",NULL));
+    s.view=HOME;
     // Only connected, non-Nap pinned questions are actionable. Multiple rows keep attention
     // active until the final one resolves; reconnecting cached state does not itself wake.
     wakes=0;s.notice_count=2;s.notice[0].question=s.notice[1].question=true;

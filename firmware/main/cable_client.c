@@ -1067,8 +1067,8 @@ static void handle_question(const cJSON *p, const char *agent_id)
     }
     // The name rides on the frame for the same reason as on `summary`: the asker may be off this tab.
     if (agent_id && questions) {
-        // A question is an alert: pinned row, wake and a (coalesced) beep, all but the beep inside
-        // ui_question_show, which stays quiet for the pane already on the glass.
+        // A question is an alert: pinned row, wake and a (coalesced) cue, all but the cue inside
+        // ui_question_show. The cue stays quiet only in Nap or while the question is being read.
         const char *request = str_of(p, "id");
         bool fresh = question_audio_fresh(request);
         if (ui_question_show(agent_id, str_of(p, "name"), str_of(p, "machine"), request, questions) && fresh)

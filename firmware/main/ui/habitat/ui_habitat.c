@@ -5040,9 +5040,9 @@ bool ui_question_show(const char *id, const char *name, const char *machine, con
     // The question is shown on the home face, in the recap's place (render_home): no screen opens
     // for it. The display wakes so a person glancing over sees it.
     change();
-    bool alert = !face && !s.nap;
-    bool audible = alert && !question_view(s.view);
-    if (alert) display_wake();
+    bool wake = !face && !s.nap;
+    bool audible = !s.nap && !question_view(s.view);
+    if (wake) display_wake();
     display_unlock();
     return audible;
 }
@@ -5257,7 +5257,7 @@ static bool swarm_notice_raise(const ht_supertab_t *t, const ht_lead_t *l, bool 
     if (face) notice_read_now(l->id);
     else if (fresh && !s.nap) display_wake();
     change();
-    return fresh && !face && !s.nap && !question_view(s.view);
+    return fresh && !s.nap && !question_view(s.view);
 }
 static void swarm_notice_drop(const char *lead)
 {
