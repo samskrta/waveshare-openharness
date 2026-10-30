@@ -4876,8 +4876,9 @@ bool ui_notify_summary(const char *id, const char *name, const char *machine, co
     }
     change();
     if (alert) display_wake();
+    bool audible = alert && !question_view(s.view);
     display_unlock();
-    return alert;
+    return audible;
 }
 bool ui_turn_error(const char *id, const char *message)
 {
@@ -4899,8 +4900,9 @@ bool ui_turn_error(const char *id, const char *message)
     }
     change();
     if (!face) display_wake();
+    bool audible = !face && !question_view(s.view);
     display_unlock();
-    return !face;
+    return audible;
 }
 void ui_notif_seen(const char *id)
 {
@@ -5039,9 +5041,10 @@ bool ui_question_show(const char *id, const char *name, const char *machine, con
     // for it. The display wakes so a person glancing over sees it.
     change();
     bool alert = !face && !s.nap;
+    bool audible = alert && !question_view(s.view);
     if (alert) display_wake();
     display_unlock();
-    return alert;
+    return audible;
 }
 void ui_question_state(const cJSON *p)
 {
@@ -5254,7 +5257,7 @@ static bool swarm_notice_raise(const ht_supertab_t *t, const ht_lead_t *l, bool 
     if (face) notice_read_now(l->id);
     else if (fresh && !s.nap) display_wake();
     change();
-    return fresh && !face && !s.nap;
+    return fresh && !face && !s.nap && !question_view(s.view);
 }
 static void swarm_notice_drop(const char *lead)
 {
@@ -5465,8 +5468,9 @@ bool ui_supertab_notice(const char *tab, const char *lead, ht_chat_kind_t chat, 
     if (face) notice_read_now(l->id);
     else display_wake();
     change();
+    bool audible = !face && !question_view(s.view);
     display_unlock();
-    return !face;
+    return audible;
 }
 // The desktop opened that chat: its message entry is read there, and goes from the dial.
 void ui_supertab_notice_read(const char *tab, const char *lead, const char *chat_id)

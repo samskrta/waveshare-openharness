@@ -113,7 +113,7 @@ idf_component_register(
         "ui"
         "board"
     REQUIRES ${BOARD_REQUIRES}
-    EMBED_FILES ${COMPANION_ART}
+    EMBED_FILES ${COMPANION_ART} "../assets/audio/waiting.s16le"
 )
 
 # snprintf() is bounded (it truncates, never overflows), but -O2 enables a noisy

@@ -104,11 +104,11 @@ static void transitions(void)
     ht_supertabs_reset(&model);
     const char ids[1][ID_MAX] = {"s1"};
     ht_supertabs_ids(&model, ids, 1, NULL, 0);
-    // First seen: ask raises, done/work do not.
+    // First authoritative card is reconnect baseline: even an ask is silent.
     const char *a[3] = {"done", "ask", "work"};
     frame(&t, "s1", 3, a, NULL);
     int n = ht_supertabs_put(&model, &t, 0, ev, 32);
-    assert(n == 1 && events(ev, n, HT_LEAD_RAISED_ASK, "L1") == 1);
+    assert(n == 0);
     // DONE→ASK raises ask once; ASK→ASK raises nothing.
     const char *b[3] = {"ask", "ask", "work"};
     frame(&t, "s1", 3, b, NULL);
@@ -133,11 +133,14 @@ static void transitions(void)
     // A Swarm leaving the list clears its asking Leads.
     frame(&t, "s1", 2, b, NULL);
     n = ht_supertabs_put(&model, &t, 0, ev, 32);
-    assert(n == 2);
+    assert(n == 1 && events(ev, n, HT_LEAD_RAISED_ASK, "L0") == 1);
     n = ht_supertabs_ids(&model, ids, 0, ev, 32);
     assert(n == 2 && events(ev, n, HT_LEAD_CLEARED, "L0") == 1 && events(ev, n, HT_LEAD_CLEARED, "L1") == 1);
     // The event buffer is never overrun.
     ht_supertabs_ids(&model, ids, 1, NULL, 0);
+    const char *quiet[2] = {"work", "work"};
+    frame(&t, "s1", 2, quiet, NULL);
+    assert(ht_supertabs_put(&model, &t, 0, ev, 1) == 0);
     frame(&t, "s1", 2, b, NULL);
     assert(ht_supertabs_put(&model, &t, 0, ev, 1) == 1);
     // since is held with the dial clock at receipt.
@@ -147,7 +150,7 @@ static void transitions(void)
     ht_supertabs_put(&model, &t, 5000, NULL, 0);
     const ht_lead_t *l = &ht_supertabs_find(&model, "s1")->leads[0];
     assert(l->since_s == 134 && l->since_at_ms == 5000);
-    puts("supertab: raise once, ask->stuck, clear on work/gone/swarm gone, bounded events PASS");
+    puts("supertab: reconnect baseline, raise once, ask->stuck, clear on work/gone/swarm gone, bounded events PASS");
 }
 
 static void lookups_and_recap(void)

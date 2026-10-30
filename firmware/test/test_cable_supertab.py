@@ -51,9 +51,14 @@ static bool device_mac_str(char *o,size_t n) { snprintf(o,n,"aa:bb");return true
 static void msg_settings(cJSON **root) { (void)root; }
 static size_t pet_store_held(char ids[][17],size_t max) { (void)ids;(void)max;return 0; }
 
-static unsigned beeps, ids_calls, card_calls, recap_calls, focus_calls, wait_calls, close_calls, question_calls, qclose_calls, notice_calls, read_calls;
+typedef enum { AUDIO_NOTIFY_ATTENTION, AUDIO_NOTIFY_WAITING, AUDIO_NOTIFY_COMPLETE, AUDIO_NOTIFY_COUNT } audio_notify_cue_t;
+static unsigned beeps, cues[AUDIO_NOTIFY_COUNT], ids_calls, card_calls, recap_calls, focus_calls, wait_calls, close_calls, question_calls, qclose_calls, notice_calls, read_calls;
 static bool beep_next;
-static void audio_notify_done(void) { beeps++; }
+static void audio_notify(audio_notify_cue_t cue) { assert(cue<AUDIO_NOTIFY_COUNT);beeps++;cues[cue]++; }
+#define ANNOUNCED_QUESTIONS 16
+#define ANNOUNCED_QUESTION_ID 64
+static char s_announced_questions[ANNOUNCED_QUESTIONS][ANNOUNCED_QUESTION_ID];
+static uint8_t s_announced_question_next;
 static char got_ids[HT_SUPERTABS_MAX][ID_MAX]; static int got_id_n;
 static ht_supertab_t got_card;
 static char got_tab[ID_MAX], got_lead[ID_MAX], got_text[2048], got_agent[ID_MAX], got_request[80], got_swarm[80];
@@ -92,7 +97,7 @@ static bool ui_question_show(const char *a,const char *n,const char *m,const cha
 }
 static void ui_question_close(const char *a,const char *r) { (void)a;(void)r;qclose_calls++; }
 '''
-for name in ['str_of', 'msg', 'msg_check', 'msg_string', 'msg_number', 'msg_array', 'send_hello', 'id_fits',
+for name in ['str_of', 'msg', 'msg_check', 'msg_string', 'msg_number', 'msg_array', 'send_hello', 'id_fits', 'question_audio_fresh',
              'handle_supertabs', 'handle_supertab', 'handle_supertab_recap', 'handle_supertab_focus',
              'handle_supertab_notice', 'handle_supertab_notice_read',
              'handle_question', 'handle_question_close', 'cable_client_supertab_send', 'cable_client_supertab_side']:
@@ -156,7 +161,7 @@ int main(void) {
     for (int i=0;i<13;i++) { char one[64];snprintf(one,sizeof one,"%s{\"id\":\"L%d\",\"state\":\"work\",\"order\":%d}",i?",":"",i,i);strcat(big,one); }
     strcat(big,"]}");
     beep_next=true;feed(handle_supertab,big);beep_next=false;
-    assert(card_calls==3 && got_card.lead_n==12 && got_card.count==12 && beeps==1);
+    assert(card_calls==3 && got_card.lead_n==12 && got_card.count==12 && beeps==1 && cues[AUDIO_NOTIFY_WAITING]==1);
 
     // supertab with chat fields parses; a Lead without them is the Lead chat.
     feed(handle_supertab,"{\"id\":\"s1\",\"name\":\"openharness\",\"leads\":["
@@ -207,7 +212,7 @@ int main(void) {
     beep_next=true;
     feed(handle_supertab_notice,"{\"tab\":\"s1\",\"lead\":\"L2\",\"chat\":\"pm\",\"chatId\":\"pm1\",\"id\":\"m9\",\"text\":\"Ready to ship.\",\"at\":1792560000}");
     beep_next=false;
-    assert(notice_calls==1 && beeps==beeps_before+1 && !strcmp(got_tab,"s1") && !strcmp(got_lead,"L2") && got_chat==HT_CHAT_PM);
+    assert(notice_calls==1 && beeps==beeps_before+1 && cues[AUDIO_NOTIFY_ATTENTION]==1 && !strcmp(got_tab,"s1") && !strcmp(got_lead,"L2") && got_chat==HT_CHAT_PM);
     assert(!strcmp(got_chat_id,"pm1") && !strcmp(got_text,"Ready to ship.") && got_at==1792560000u);
     feed(handle_supertab_notice,"{\"tab\":\"s1\",\"lead\":\"L1\",\"chat\":\"lead\",\"chatId\":\"lead-web\",\"id\":\"m10\",\"text\":\"Done.\",\"at\":5}");
     assert(notice_calls==2 && got_chat==HT_CHAT_LEAD && beeps==beeps_before+1);
@@ -269,7 +274,8 @@ int main(void) {
     feed_agent(handle_question,"{\"agentId\":\"h1\",\"id\":\"r1\",\"questions\":[{\"q\":\"Pick\"}]}");
     assert(question_calls==1 && wait_calls==2 && beeps==3);
     feed_agent(handle_question,"{\"agentId\":\"h1\",\"id\":\"r1\",\"questions\":[{\"q\":\"Pick\"}],\"superTab\":\"\"}");
-    assert(question_calls==2 && wait_calls==2);
+    assert(question_calls==2 && wait_calls==2 && beeps==3); // replayed request updates UI but is silent
+    assert(cues[AUDIO_NOTIFY_WAITING]>=3 && cues[AUDIO_NOTIFY_COMPLETE]==0);
     beep_next=false;
     feed_agent(handle_question,"{\"id\":\"supertab:a3\",\"superTab\":\"openharness\"}");
     assert(wait_calls==2);   // no agent: nothing to attach it to
