@@ -69,6 +69,27 @@ void config_save_brightness(uint8_t level)
     ESP_LOGI(TAG, "save_brightness 0x%02x: %s", level, ok ? "ok" : "FAILED");
 }
 
+uint8_t config_load_display_rotation(uint8_t fallback)
+{
+    nvs_handle_t h;
+    uint8_t value = fallback;
+    if (nvs_open(NS, NVS_READONLY, &h) == ESP_OK) {
+        nvs_get_u8(h, "disp_rot", &value);
+        nvs_close(h);
+    }
+    return value < 4 ? value : fallback;
+}
+
+bool config_save_display_rotation(uint8_t turns)
+{
+    if (turns >= 4) return false;
+    nvs_handle_t h;
+    if (nvs_open(NS, NVS_READWRITE, &h) != ESP_OK) return false;
+    bool ok = nvs_set_u8(h, "disp_rot", turns) == ESP_OK && nvs_commit(h) == ESP_OK;
+    nvs_close(h);
+    return ok;
+}
+
 bool config_load_muted(void)
 {
     nvs_handle_t h;

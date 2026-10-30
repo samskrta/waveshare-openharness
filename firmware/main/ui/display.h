@@ -14,6 +14,9 @@ void display_init_ota(void);
 // Set the AMOLED brightness (CO5300 DCS 0x51): 0x00 = dimmest, 0xFF = max. Applied live.
 void display_set_brightness(uint8_t level);
 
+// Immutable for this boot: image quarter-turns, 0=USB left, 1=top, 2=right, 3=bottom.
+uint8_t display_get_rotation(void);
+
 // Lock/unlock the LVGL mutex. ANY code that touches LVGL objects from outside
 // the LVGL task (e.g. the WiFi/WS tasks via ui_screens.c) must hold this.
 // `display_lock()` carries the caller's name so a wait past 2s can be logged with who is waiting and

@@ -1,6 +1,6 @@
 # Validation record
 
-Initial bring-up validated on 2026-10-29, America/Chicago. The original sections below describe that left-port image. For the current USB-top firmware and CAD, see [USB-top revision](usb-top.md).
+Initial bring-up validated on 2026-10-29, America/Chicago. The original sections below describe that left-port image. For the fixed USB-top revision, see [USB-top revision](usb-top.md). For the current saved rotation setting, see [rotation setting](rotation-setting.md).
 
 ## Firmware and hardware
 

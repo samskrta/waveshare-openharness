@@ -39,7 +39,7 @@ Activate **ESP-IDF v5.5.4** and run:
 idf.py -C firmware -B "$PWD/build/firmware" -DDEVICE_BOARD=waveshare-standard build
 ```
 
-The Waveshare profile defaults to `DEVICE_USB_POSITION=top`. Use `-DDEVICE_USB_POSITION=left` only for the original left-port enclosure. Rotation uses a CPU-only PSRAM strip and the existing two DMA buffers, preserving native panel addressing. The profile uses audio MCLK **GPIO42**, reads the PWR key through **TCA9554 P4**, and avoids probing SD pins as alternate reset lines. The device reports `waveshare-standard-1.75`, so the tested host refuses to replace it with incompatible stock dial firmware. The firmware binary retains the upstream `0.0.94` version string; the board identity and release SHA-256 manifest distinguish this port.
+Change rotation on the board: **hold the dashboard face → Tabs → Controls → Display rotation**, then select USB Left, Top, Right, or Bottom. It is saved through power cycles and applied with a brief device restart. The default is Top for the current enclosure. `DEVICE_USB_POSITION=top` (or `left`) only chooses the fallback when no valid preference is saved. Rotation uses a CPU-only PSRAM strip and the existing two DMA buffers, preserving native panel addressing. The profile uses audio MCLK **GPIO42**, reads the PWR key through **TCA9554 P4**, and avoids probing SD pins as alternate reset lines. The device reports `waveshare-standard-1.75`, so the tested host refuses to replace it with incompatible stock dial firmware. The firmware binary retains the upstream `0.0.94` version string; the board identity and release SHA-256 manifest distinguish this port.
 
 Use the [firmware guide](firmware/README.md) for flashing and recovery. Save a full local flash backup before changing a new device. **Full flash backups are intentionally not committed** because they can contain settings or credentials. No eFuses or ROM-download restrictions were changed on the tested unit.
 
@@ -51,9 +51,9 @@ The temporary account permission allowing agents to start other agents was resto
 
 ## Validation and limits
 
-The [USB-top revision record](docs/validation/usb-top.md) separates the current rotation/build/flash checks from the initial bring-up evidence below.
+See the [saved rotation validation](docs/validation/rotation-setting.md) and [fixed USB-top revision record](docs/validation/usb-top.md) for checks beyond the initial bring-up evidence below.
 
-**USB-top orientation confirmed on actual hardware:** dashboard upright with USB-C at the top; taps and swipes follow the finger correctly.
+**Saved rotation confirmed on actual hardware:** selecting Left and then Top saves, restarts, and keeps the dashboard and touch aligned. The unit is currently set to Top.
 
 **Passed on actual hardware during initial bring-up:** firmware build/flash hash checks, boot and PSRAM test, display, physical touch, native USB session, clean framed traffic, codec initialization, microphone data reaching host STT, and a live Claude reply: `Waveshare dashboard connected.`
 

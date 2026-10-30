@@ -1,0 +1,30 @@
+Executing action: all (aliases: build)
+Running ninja in directory /private/tmp/waveshare-openharness-repo/build/usb-top
+Executing "ninja all"...
+[1/9] Performing build step for 'bootloader'
+[1/1] cd /tmp/waveshare-openharness-repo/build/usb-top/bootloader/esp-idf/esptool_py && /private/tmp/waveshare-idf-tools/python_env/idf5.5_py3.13_env/bin/python /Users/todd/Documents/Codex/2026-10-29/referenced-chatgpt-conversation-this-is-an/work/esp-idf-recovered.nosync/components/partition_table/check_sizes.py --offset 0x8000 bootloader 0x0 /tmp/waveshare-openharness-repo/build/usb-top/bootloader/bootloader.bin
+Bootloader binary size 0x5760 bytes. 0x28a0 bytes (32%) free.
+[2/9] No install step for 'bootloader'
+[3/9] Completed 'bootloader'
+[4/9] Building C object esp-idf/main/CMakeFiles/__idf_main.dir/ui/habitat/ui_habitat.c.obj
+[5/9] Linking C static library esp-idf/main/libmain.a
+[6/9] Generating esp-idf/esp_system/ld/sections.ld
+/tmp/waveshare-openharness-repo/firmware/managed_components/espressif__esp_codec_dev/Kconfig:4: warning: ESP_IDF_VERSION has 'option env="ESP_IDF_VERSION"', but the environment variable ESP_IDF_VERSION is not set
+[7/9] Linking CXX executable interns_commander.elf
+[8/9] Generating binary image from built executable
+esptool.py v4.12.0
+Creating esp32s3 image...
+Merged 2 ELF sections
+Successfully created esp32s3 image.
+Generated /tmp/waveshare-openharness-repo/build/usb-top/interns_commander.bin
+[9/9] cd /tmp/waveshare-openharness-repo/build/usb-top/esp-idf/esptool_py && /private/tmp/waveshare-idf-tools/python_env/idf5.5_py3.13_env/bin/python /Users/todd/Documents/Codex/2026-10-29/referenced-chatgpt-conversation-this-is-an/work/esp-idf-recovered.nosync/components/partition_table/check_sizes.py --offset 0x8000 partition --type app /tmp/waveshare-openharness-repo/build/usb-top/partition_table/partition-table.bin /tmp/waveshare-openharness-repo/build/usb-top/interns_commander.bin
+interns_commander.bin binary size 0x3352d0 bytes. Smallest app partition is 0x7e0000 bytes. 0x4aad30 bytes (59%) free.
+
+Project build complete. To flash, run:
+ idf.py flash
+or
+ idf.py -p PORT flash
+or
+ python -m esptool --chip esp32s3 -b 460800 --before default_reset --after hard_reset write_flash --flash_mode dio --flash_size 16MB --flash_freq 80m 0x0 build/usb-top/bootloader/bootloader.bin 0x8000 build/usb-top/partition_table/partition-table.bin 0xf000 build/usb-top/ota_data_initial.bin 0x20000 build/usb-top/interns_commander.bin
+or from the "/private/tmp/waveshare-openharness-repo/build/usb-top" directory
+ python -m esptool --chip esp32s3 -b 460800 --before default_reset --after hard_reset write_flash "@flash_args"

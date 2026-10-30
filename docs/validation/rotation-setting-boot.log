@@ -1,0 +1,5 @@
+I (1039) esp_psram: SPI SRAM memory test OK
+I (1068) board: board waveshare-standard-1.75: touch=cst9217 pmic=yes rst=39/40 (ack 34,5A)
+I (2433) habitat: orientation usb=top image_ccw=90 touch_cw=90
+I (2433) habitat: direct C renderer on a 466px face: two 22368-byte internal DMA buffers over 40MHz QSPI
+I (2509) CST9217: Resolution X: 466, Y: 466

@@ -19,9 +19,11 @@ Changes:
 - Never pulse GPIO1/2 as candidate reset pins on the standard board; those are SDMMC pins.
 - Announce `hw=waveshare-standard-1.75` even if initial probing fails. The official host currently offers no stock image to this identity.
 
-Display/touch pins match the verified standard-board layout. The Waveshare profile now defaults to **USB-C at the top**: physically turn the cased unit clockwise 90 degrees from the original left-port position. Each image damage strip rotates counterclockwise before DMA; calibrated touch coordinates use the inverse turn. The panel's native 6-pixel X offset remains unchanged. One additional 22,368-byte PSRAM strip avoids allocating another internal DMA buffer.
+Display/touch pins match the verified standard-board layout. **Rotation is a saved on-device setting.** Hold the dashboard face for about 0.65 seconds to open Tabs, then tap **Controls → Display rotation**. Choose where USB-C should point: Left, Top, Right, or Bottom. The device saves the preference and briefly restarts, applying image and touch together. The selected row says `(current)` and cannot be selected again. If saving fails, the current orientation stays active and the screen reports the failure.
 
-For an enclosure already printed with USB on the left, add `-DDEVICE_USB_POSITION=left` to the build command. This disables both image and touch rotation. The current CAD/STLs require the default `top` image. Retaining the protective case does not change this electrical profile.
+Top is the factory default for this profile and matches the current enclosure. Each image damage strip rotates before DMA; calibrated touch uses the inverse mapping. Native CO5300 addressing and its 6-pixel X gap remain unchanged. One additional 22,368-byte CPU-only PSRAM strip retains the original two internal DMA buffers.
+
+`-DDEVICE_USB_POSITION=left` selects a different **fallback for an unset/corrupt preference**, not a forced orientation. A saved choice overrides the build default and survives normal application updates. Factory reset clears it with the other preferences. The official desktop app has no rotation row; use the device menu. No desktop/daemon patch is required.
 
 ## Flash the checked binary set
 

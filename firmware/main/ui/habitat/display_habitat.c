@@ -2,6 +2,7 @@
 // Direct text -> RGB565 -> QSPI DMA. No LVGL initialization or object pool.
 #include "runtime.h"
 #include "orientation.h"
+#include "config_store.h"
 #include "perf_bench.h"
 #ifdef DEVICE_LAYOUT_BENCH
 #include "layout_bench.h"
@@ -44,7 +45,9 @@ static esp_lcd_panel_handle_t panel;
 static SemaphoreHandle_t model_lock, dma_done;
 static TaskHandle_t renderer;
 static uint16_t *pixels[2];
-#ifdef DEVICE_WAVESHARE_USB_TOP
+static uint8_t rotation;
+uint8_t display_get_rotation(void) { return rotation; }
+#ifdef DEVICE_WAVESHARE_STANDARD
 // One CPU-only PSRAM strip; the original two internal DMA buffers retain their
 // ownership/fence rules. No full framebuffer or panel MADCTL assumptions.
 static uint16_t *raster_pixels;
@@ -281,7 +284,7 @@ static uint32_t paint(const ht_scene_t *next, const ht_damage_t *damage)
             ht_rect_t strip = {rect.x, y, rect.w, h};
             int64_t t = esp_timer_get_time();
             render_progress(RENDER_RASTER);
-#ifdef DEVICE_WAVESHARE_USB_TOP
+#ifdef DEVICE_WAVESHARE_STANDARD
             uint16_t *raster = raster_pixels;
 #else
             uint16_t *raster = pixels[buffer];
@@ -292,8 +295,8 @@ static uint32_t paint(const ht_scene_t *next, const ht_damage_t *damage)
             ht_raster(next, strip, raster);
 #endif
             ht_rect_t target = strip;
-#ifdef DEVICE_WAVESHARE_USB_TOP
-            target = display_orient_pixels(strip, raster, pixels[buffer]);
+#ifdef DEVICE_WAVESHARE_STANDARD
+            target = display_orient_pixels(strip, raster, pixels[buffer], rotation);
 #endif
             raster_us += (uint32_t)(esp_timer_get_time() - t);
             // CPU prepares B while DMA owns A. Neither buffer is reused before the ISR fence.
@@ -492,11 +495,20 @@ void display_init(void)
     ESP_ERROR_CHECK(esp_lcd_panel_reset(panel));
     ESP_ERROR_CHECK(esp_lcd_panel_init(panel));
     ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel, true));
+#ifdef DEVICE_WAVESHARE_STANDARD
+    rotation = config_load_display_rotation(
 #ifdef DEVICE_WAVESHARE_USB_TOP
+        1
+#else
+        0
+#endif
+    );
     raster_pixels = heap_caps_malloc(HT_WIDTH * STRIP_LINES * 2,
                                      MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
     assert(raster_pixels);
-    ESP_LOGI("habitat", "orientation=usb-top image=ccw90 touch=cw90");
+    ESP_LOGI("habitat", "orientation usb=%s image_ccw=%u touch_cw=%u",
+             (const char *const[]){"left", "top", "right", "bottom"}[rotation],
+             rotation * 90u, rotation * 90u);
 #endif
     for (int i = 0; i < 2; i++) {
         pixels[i] =

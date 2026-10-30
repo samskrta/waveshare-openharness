@@ -2,7 +2,7 @@
 
 **Prototype: CAD and mesh checks passed; no physical print/fit test has been performed. Print both fit coupons before the full housing.**
 
-This enclosure retains the stock protective case on the Waveshare ESP32-S3-Touch-AMOLED-1.75-B sold in [the linked Amazon listing](https://www.amazon.com/dp/B0F8868KK8). It accommodates the supplied rounded 2030 Type-B speaker. Use the USB-top firmware and install the cased module with **USB-C at 12 o'clock / top-center**, microSD access at the bottom, microphones on the upper diagonals, and PWR/BOOT on the lower diagonals. This turns the module clockwise 90 degrees from the first left-port enclosure; the firmware keeps the dashboard upright and touch aligned.
+This enclosure retains the stock protective case on the Waveshare ESP32-S3-Touch-AMOLED-1.75-B sold in [the linked Amazon listing](https://www.amazon.com/dp/B0F8868KK8). It accommodates the supplied rounded 2030 Type-B speaker. Select **Top** under the device's **Display rotation** setting (hold the dashboard face → Tabs → Controls). Install the cased module with **USB-C at 12 o'clock / top-center**, microSD access at the bottom, microphones on the upper diagonals, and PWR/BOOT on the lower diagonals. This turns the module clockwise 90 degrees from the first left-port enclosure; the firmware keeps the dashboard upright and touch aligned.
 
 The enclosure was remodeled from the round, tilted form and dimensions of the Autonomous OpenHarness STEP housing. It is larger and has new mounting internals. The original imported trimmed/offset surfaces failed modification booleans, so this version uses clean parametric lofts rather than claiming to preserve every original surface. The original STEP is retained under `source/` for provenance.
 

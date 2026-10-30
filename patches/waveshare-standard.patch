@@ -10,8 +10,8 @@ diff --git a/devices/harness-device/firmware/main/CMakeLists.txt b/devices/harne
 +# Explicit opt-in; never infer this wiring from the shared touch-controller ID.
 +if(DEVICE_BOARD STREQUAL "waveshare-standard")
 +    target_compile_definitions(${COMPONENT_LIB} PRIVATE DEVICE_WAVESHARE_STANDARD=1)
-+    # Rotate the image/touch together for a cased module mounted USB-C up.
-+    # Retain an explicit escape hatch for the original left-port enclosure.
++    # Fallback for an unset/corrupt saved rotation. The on-device setting wins.
++    # Top matches the current enclosure; left supports the original prototype.
 +    if(NOT DEFINED DEVICE_USB_POSITION OR DEVICE_USB_POSITION STREQUAL "top")
 +        target_compile_definitions(${COMPONENT_LIB} PRIVATE DEVICE_WAVESHARE_USB_TOP=1)
 +    elseif(NOT DEVICE_USB_POSITION STREQUAL "left")
@@ -190,22 +190,84 @@ diff --git a/devices/harness-device/firmware/main/board/power.c b/devices/harnes
  }
  
  int power_battery_pct(void)
+diff --git a/devices/harness-device/firmware/main/config_store.c b/devices/harness-device/firmware/main/config_store.c
+--- a/devices/harness-device/firmware/main/config_store.c
++++ b/devices/harness-device/firmware/main/config_store.c
+@@ -67,6 +67,27 @@
+     bool ok = nvs_set_u8(h, "bright", level) == ESP_OK && nvs_commit(h) == ESP_OK;
+     nvs_close(h);
+     ESP_LOGI(TAG, "save_brightness 0x%02x: %s", level, ok ? "ok" : "FAILED");
++}
++
++uint8_t config_load_display_rotation(uint8_t fallback)
++{
++    nvs_handle_t h;
++    uint8_t value = fallback;
++    if (nvs_open(NS, NVS_READONLY, &h) == ESP_OK) {
++        nvs_get_u8(h, "disp_rot", &value);
++        nvs_close(h);
++    }
++    return value < 4 ? value : fallback;
++}
++
++bool config_save_display_rotation(uint8_t turns)
++{
++    if (turns >= 4) return false;
++    nvs_handle_t h;
++    if (nvs_open(NS, NVS_READWRITE, &h) != ESP_OK) return false;
++    bool ok = nvs_set_u8(h, "disp_rot", turns) == ESP_OK && nvs_commit(h) == ESP_OK;
++    nvs_close(h);
++    return ok;
+ }
+ 
+ bool config_load_muted(void)
+diff --git a/devices/harness-device/firmware/main/config_store.h b/devices/harness-device/firmware/main/config_store.h
+--- a/devices/harness-device/firmware/main/config_store.h
++++ b/devices/harness-device/firmware/main/config_store.h
+@@ -19,6 +19,11 @@
+ // Screen brightness, 0..255. The renderer applies it to the OLED panel.
+ uint8_t config_load_brightness(void);
+ void    config_save_brightness(uint8_t level);
++
++// Counterclockwise image quarter-turns from the native left-USB orientation.
++// A missing/corrupt key uses the build's default; changing it takes effect on reboot.
++uint8_t config_load_display_rotation(uint8_t fallback);
++bool config_save_display_rotation(uint8_t turns);
+ 
+ // Habitat starts muted. The saved preference survives firmware updates.
+ bool config_load_muted(void);
+diff --git a/devices/harness-device/firmware/main/ui/display.h b/devices/harness-device/firmware/main/ui/display.h
+--- a/devices/harness-device/firmware/main/ui/display.h
++++ b/devices/harness-device/firmware/main/ui/display.h
+@@ -13,6 +13,9 @@
+ 
+ // Set the AMOLED brightness (CO5300 DCS 0x51): 0x00 = dimmest, 0xFF = max. Applied live.
+ void display_set_brightness(uint8_t level);
++
++// Immutable for this boot: image quarter-turns, 0=USB left, 1=top, 2=right, 3=bottom.
++uint8_t display_get_rotation(void);
+ 
+ // Lock/unlock the LVGL mutex. ANY code that touches LVGL objects from outside
+ // the LVGL task (e.g. the WiFi/WS tasks via ui_screens.c) must hold this.
 diff --git a/devices/harness-device/firmware/main/ui/habitat/display_habitat.c b/devices/harness-device/firmware/main/ui/habitat/display_habitat.c
 --- a/devices/harness-device/firmware/main/ui/habitat/display_habitat.c
 +++ b/devices/harness-device/firmware/main/ui/habitat/display_habitat.c
-@@ -1,6 +1,7 @@
+@@ -1,6 +1,8 @@
  #include "illustrated.h"
  // Direct text -> RGB565 -> QSPI DMA. No LVGL initialization or object pool.
  #include "runtime.h"
 +#include "orientation.h"
++#include "config_store.h"
  #include "perf_bench.h"
  #ifdef DEVICE_LAYOUT_BENCH
  #include "layout_bench.h"
-@@ -43,6 +44,11 @@
+@@ -43,6 +45,13 @@
  static SemaphoreHandle_t model_lock, dma_done;
  static TaskHandle_t renderer;
  static uint16_t *pixels[2];
-+#ifdef DEVICE_WAVESHARE_USB_TOP
++static uint8_t rotation;
++uint8_t display_get_rotation(void) { return rotation; }
++#ifdef DEVICE_WAVESHARE_STANDARD
 +// One CPU-only PSRAM strip; the original two internal DMA buffers retain their
 +// ownership/fence rules. No full framebuffer or panel MADCTL assumptions.
 +static uint16_t *raster_pixels;
@@ -213,11 +275,11 @@ diff --git a/devices/harness-device/firmware/main/ui/habitat/display_habitat.c b
  static ht_scene_t scenes[2];
  static bool painted;
  static atomic_bool asleep, force_frame;
-@@ -275,10 +281,19 @@
+@@ -275,10 +284,19 @@
              ht_rect_t strip = {rect.x, y, rect.w, h};
              int64_t t = esp_timer_get_time();
              render_progress(RENDER_RASTER);
-+#ifdef DEVICE_WAVESHARE_USB_TOP
++#ifdef DEVICE_WAVESHARE_STANDARD
 +            uint16_t *raster = raster_pixels;
 +#else
 +            uint16_t *raster = pixels[buffer];
@@ -230,12 +292,12 @@ diff --git a/devices/harness-device/firmware/main/ui/habitat/display_habitat.c b
 +            ht_raster(next, strip, raster);
 +#endif
 +            ht_rect_t target = strip;
-+#ifdef DEVICE_WAVESHARE_USB_TOP
-+            target = display_orient_pixels(strip, raster, pixels[buffer]);
++#ifdef DEVICE_WAVESHARE_STANDARD
++            target = display_orient_pixels(strip, raster, pixels[buffer], rotation);
  #endif
              raster_us += (uint32_t)(esp_timer_get_time() - t);
              // CPU prepares B while DMA owns A. Neither buffer is reused before the ISR fence.
-@@ -286,7 +301,8 @@
+@@ -286,7 +304,8 @@
                  wait_dma();
              ui_perf_flush((size_t)rect.w * h * 2);
              render_progress(RENDER_SUBMIT);
@@ -245,15 +307,24 @@ diff --git a/devices/harness-device/firmware/main/ui/habitat/display_habitat.c b
                                                        pixels[buffer]));
              pending = true;
              buffer ^= 1;
-@@ -476,6 +492,12 @@
+@@ -476,6 +495,21 @@
      ESP_ERROR_CHECK(esp_lcd_panel_reset(panel));
      ESP_ERROR_CHECK(esp_lcd_panel_init(panel));
      ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel, true));
++#ifdef DEVICE_WAVESHARE_STANDARD
++    rotation = config_load_display_rotation(
 +#ifdef DEVICE_WAVESHARE_USB_TOP
++        1
++#else
++        0
++#endif
++    );
 +    raster_pixels = heap_caps_malloc(HT_WIDTH * STRIP_LINES * 2,
 +                                     MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
 +    assert(raster_pixels);
-+    ESP_LOGI("habitat", "orientation=usb-top image=ccw90 touch=cw90");
++    ESP_LOGI("habitat", "orientation usb=%s image_ccw=%u touch_cw=%u",
++             (const char *const[]){"left", "top", "right", "bottom"}[rotation],
++             rotation * 90u, rotation * 90u);
 +#endif
      for (int i = 0; i < 2; i++) {
          pixels[i] =
@@ -262,28 +333,37 @@ diff --git a/devices/harness-device/firmware/main/ui/habitat/orientation.h b/dev
 new file mode 100644
 --- /dev/null
 +++ b/devices/harness-device/firmware/main/ui/habitat/orientation.h
-@@ -0,0 +1,22 @@
-+// The cased Waveshare module turns clockwise 90 degrees to put USB-C at the top.
+@@ -0,0 +1,31 @@
++// Saved image quarter-turns: USB left=0, top=1, right=2, bottom=3.
 +// Keep the CO5300's native addressing/gap; rotate each damage strip before DMA.
 +// Touch uses the inverse mapping AFTER the controller's existing calibration.
 +#pragma once
 +#include "terminal.h"
 +
-+static inline ht_rect_t display_orient_pixels(ht_rect_t r, const uint16_t *src, uint16_t *dst)
++static inline ht_rect_t display_orient_pixels(ht_rect_t r, const uint16_t *src, uint16_t *dst, unsigned turns)
 +{
-+    // Logical -> native: (x, y) -> (y, 465-x), a counterclockwise image turn.
++    // Logical -> native: counterclockwise image turns; odd turns transpose strips.
 +    // RGB565 words (including their on-wire byte order) are copied unchanged.
 +    for (int y = 0; y < r.h; y++)
-+        for (int x = 0; x < r.w; x++)
-+            dst[(r.w - 1 - x) * r.h + y] = src[y * r.w + x];
-+    return (ht_rect_t){r.y, HT_WIDTH - r.x - r.w, r.h, r.w};
++        for (int x = 0; x < r.w; x++) {
++            int to = turns == 1 ? (r.w - 1 - x) * r.h + y :
++                     turns == 2 ? (r.h - 1 - y) * r.w + r.w - 1 - x :
++                     turns == 3 ? x * r.h + r.h - 1 - y : y * r.w + x;
++            dst[to] = src[y * r.w + x];
++        }
++    if (turns == 1) return (ht_rect_t){r.y, HT_WIDTH - r.x - r.w, r.h, r.w};
++    if (turns == 2) return (ht_rect_t){HT_WIDTH - r.x - r.w, HT_HEIGHT - r.y - r.h, r.w, r.h};
++    if (turns == 3) return (ht_rect_t){HT_HEIGHT - r.y - r.h, r.x, r.h, r.w};
++    return r;
 +}
 +
-+static inline void display_orient_touch(uint16_t *x, uint16_t *y)
++static inline void display_orient_touch(uint16_t *x, uint16_t *y, unsigned turns)
 +{
 +    uint16_t native_x = *x;
-+    *x = HT_WIDTH - 1 - *y;
-+    *y = native_x;
++    uint16_t native_y = *y;
++    if (turns == 1) { *x = HT_WIDTH - 1 - native_y; *y = native_x; }
++    if (turns == 2) { *x = HT_WIDTH - 1 - native_x; *y = HT_HEIGHT - 1 - native_y; }
++    if (turns == 3) { *x = native_y; *y = HT_HEIGHT - 1 - native_x; }
 +}
 diff --git a/devices/harness-device/firmware/main/ui/habitat/touch_habitat.c b/devices/harness-device/firmware/main/ui/habitat/touch_habitat.c
 --- a/devices/harness-device/firmware/main/ui/habitat/touch_habitat.c
@@ -298,16 +378,179 @@ diff --git a/devices/harness-device/firmware/main/ui/habitat/touch_habitat.c b/d
                  trusted = false;
              }
              if (down) {
-+#ifdef DEVICE_WAVESHARE_USB_TOP
-+                display_orient_touch(&x, &y);
++#ifdef DEVICE_WAVESHARE_STANDARD
++                display_orient_touch(&x, &y, display_get_rotation());
 +#endif
                  last_good = now;
                  last_x = x;
                  last_y = y;
+diff --git a/devices/harness-device/firmware/main/ui/habitat/ui_habitat.c b/devices/harness-device/firmware/main/ui/habitat/ui_habitat.c
+--- a/devices/harness-device/firmware/main/ui/habitat/ui_habitat.c
++++ b/devices/harness-device/firmware/main/ui/habitat/ui_habitat.c
+@@ -25,6 +25,10 @@
+ #include "audio_client.h"
+ #include "audio_capture.h"
+ #include "config_store.h"
++#ifdef DEVICE_WAVESHARE_STANDARD
++#include "esp_system.h"
++static bool rotation_pending;
++#endif
+ #include "cable_client.h"
+ #include "pet_store.h"
+ #include "../../elapsed.h"
+@@ -89,6 +93,7 @@
+     DRAFT,
+     DRAFT_OPTIONS,
+     SETTINGS,
++    ROTATION,
+     STOP,
+     MODELS,
+     MESSAGE,
+@@ -118,6 +123,7 @@
+     A_NAP,
+     A_SETTINGS_SAVE,
+     A_SETTINGS,
++    A_ROTATION, A_ROTATION_SET,
+     A_STOP,
+     A_STOP_YES,
+     A_MODELS,
+@@ -1942,6 +1948,9 @@
+ static const char *settings_item(int wanted, action_kind_t *action)
+ {
+     static const struct { const char *label; action_kind_t action; uint32_t feature; } items[] = {
++#ifdef DEVICE_WAVESHARE_STANDARD
++        {"Display rotation", A_ROTATION, 0},
++#endif
+         {"Inbox", A_INBOX, 0}, {"Machines", A_MACHINES, 0},
+         {"Model", A_MODELS, 0}, {"Stop current turn", A_STOP, 0},
+         {"Nap", A_NAP, 0},
+@@ -2131,14 +2140,28 @@
+     }
+     focus_carousel(f, &tab_carousel, tabs_total(), tab_label, A_TAB);
+ }
++#ifdef DEVICE_WAVESHARE_STANDARD
++static void render_device_controls(ht_scene_t *f)
++{
++    // Separate footer targets, below the tab carousel's 110..362 contact area.
++    control(f, 100, 385, 150, "Controls", A_SETTINGS, 0, true);
++    control(f, 265, 385, 100, "Done", A_TAB_DONE, 0, true);
++}
++#endif
+ static void render_tabs(ht_scene_t *f)
+ {
++#ifdef DEVICE_WAVESHARE_STANDARD
++    render_device_controls(f);
++#else
+     // Done is shared by every face, with the same generous bottom-edge target; green on Focus (design 2026-10-06).
+     ht_text(f, (HT_WIDTH-ht_done_28.width)/2, 400, ht_done_28.width, &ht_done_28,
+             character.id == HT_CHARACTER_FOCUS ? color(HT_THEME_VOICE) : FG, BG, HT_DONE);
++#endif
+     if (character.id == HT_CHARACTER_FOCUS) {
+         render_focus_tabs(f);
++#ifndef DEVICE_WAVESHARE_STANDARD
+         s.hits[s.hit_count++] = (hit_t){{83, 392, 300, 74}, A_TAB_DONE, 0, true};
++#endif
+         return;
+     }
+     ht_arc_title(f, DIM, "tabs");
+@@ -2167,7 +2190,9 @@
+                 A_TAB, i, s.connected};
+         }
+     }
++#ifndef DEVICE_WAVESHARE_STANDARD
+     s.hits[s.hit_count++] = (hit_t){{83, 392, 300, 74}, A_TAB_DONE, 0, true};
++#endif
+ }
+ static void render_notice(ht_scene_t *f)
+ {
+@@ -2521,7 +2546,7 @@
+         const char *label = settings_item(s.offset + row, &action);
+         if (!label) break;
+         if (action == A_NAP) label = s.nap ? "Wake" : "Nap";
+-        bool enabled = action == A_INBOX || action == A_NAP ||
++        bool enabled = action == A_INBOX || action == A_NAP || action == A_ROTATION ||
+             (s.connected && ((action != A_STOP && action != A_MODELS && action != A_SELECT_BEGIN && action != A_LATEST) ||
+                 (active() && (action != A_STOP || active()->busy) && (action != A_LATEST || !visit.pending))));
+         int y = TAB_TOP + row * TAB_ROW_HEIGHT, hit = s.hit_count++;
+@@ -2544,6 +2569,23 @@
+  * under the display lock so the glass is right on the next frame, and this is what gets persisted.
+  * Guarded by the display lock, like every other piece of `s`.
+  */
++#ifdef DEVICE_WAVESHARE_STANDARD
++static void render_rotation(ht_scene_t *f)
++{
++    heading(f, "USB port");
++    static const char *const positions[] = {"Left", "Top", "Right", "Bottom"};
++    for (int i = 0; i < 4; i++) {
++        char label[24];
++        snprintf(label, sizeof label, "%s%s", positions[i],
++                 i == display_get_rotation() ? " (current)" : "");
++        control(f, 83, 134 + i * 68, 300, label, A_ROTATION_SET, i,
++                !rotation_pending && i != display_get_rotation());
++    }
++    const char *note = rotation_pending ? "Restarting..." : "Restarts device";
++    int width = ht_measure(&ht_mono_20, note);
++    ht_text(f, (HT_WIDTH - width) / 2, 398, width, &ht_mono_20, DIM, BG, note);
++}
++#endif
+ static struct {
+     ui_settings_t values;
+     uint32_t fields;
+@@ -2608,6 +2650,11 @@
+         break;
+     case SELECTION:
+         render_selection(f);
++        break;
++    case ROTATION:
++#ifdef DEVICE_WAVESHARE_STANDARD
++        render_rotation(f);
++#endif
+         break;
+     case SETTINGS:
+         render_settings(f);
+@@ -3250,6 +3297,20 @@
+             change();
+         }
+         break;
++    case A_ROTATION:
++#ifdef DEVICE_WAVESHARE_STANDARD
++        view(ROTATION);
++#endif
++        break;
++    case A_ROTATION_SET:
++#ifdef DEVICE_WAVESHARE_STANDARD
++        if (a.value >= 0 && a.value < 4 && a.value != display_get_rotation() && !rotation_pending) {
++            if (audio_client_active()) ui_cable_toast("Finish voice before rotating.");
++            else if (queue(a)) { rotation_pending = true; change(); }
++            else ui_cable_toast("Device busy. Try again.");
++        }
++#endif
++        break;
+     case A_SETTINGS:
+         view(SETTINGS);
+         break;
+@@ -3435,6 +3496,17 @@
+             cable_client_agent_update(a.id, model, effort);
+             break;
+         }
++        case A_ROTATION_SET:
++#ifdef DEVICE_WAVESHARE_STANDARD
++            if (a.value >= 0 && a.value < 4 && config_save_display_rotation((uint8_t)a.value)) {
++                // Apply the image and touch together on boot, never mid-contact or mid-DMA.
++                esp_restart();
++            } else {
++                display_lock(); rotation_pending = false; change(); display_unlock();
++                ui_cable_toast("Rotation not saved. Try again.");
++            }
++#endif
++            break;
+         case A_SETTINGS_SAVE: {
+             // Everything the app asked for, written off the render path. The report at the end carries
+             // what the device HOLDS, read back — which is what corrects a window whose change failed.
 diff --git a/devices/harness-device/firmware/test/run.sh b/devices/harness-device/firmware/test/run.sh
 --- a/devices/harness-device/firmware/test/run.sh
 +++ b/devices/harness-device/firmware/test/run.sh
-@@ -18,6 +18,10 @@
+@@ -18,6 +18,11 @@
  python3 "$here/../scripts/gen_tux_moods.py" --check
  python3 "$here/../scripts/gen_pets.py" --check
  python3 "$here/../scripts/gen_arc_geometry.py" --check
@@ -315,6 +558,7 @@ diff --git a/devices/harness-device/firmware/test/run.sh b/devices/harness-devic
 +cc -std=c11 -Wall -Wextra -Werror -O1 -g -fsanitize="${SANITIZERS:-undefined,bounds}" \
 +   -I "$here/../main/ui/habitat" -o "$out/test_orientation" "$here/test_orientation.c"
 +"$out/test_orientation"
++python3 "$here/test_rotation_settings.py"
  
  cc -std=c11 -Wall -Wextra -Werror -O1 -g -fsanitize="${SANITIZERS:-undefined,bounds}" \
     -I "$here/../main" -o "$out/test_character" "$here/test_character.c" "$here/../main/pet_store.c" "$here/../main/elapsed.c" \
@@ -322,7 +566,7 @@ diff --git a/devices/harness-device/firmware/test/test_orientation.c b/devices/h
 new file mode 100644
 --- /dev/null
 +++ b/devices/harness-device/firmware/test/test_orientation.c
-@@ -0,0 +1,54 @@
+@@ -0,0 +1,63 @@
 +// Reassemble partial DMA strips and prove that touch maps every native pixel
 +// back to the logical pixel painted there, including the 465/466 boundaries.
 +#include "orientation.h"
@@ -330,6 +574,7 @@ new file mode 100644
 +#include <stdio.h>
 +#include <stdlib.h>
 +
++static unsigned turns;
 +static uint16_t native[HT_WIDTH * HT_HEIGHT];
 +static uint16_t src[HT_WIDTH * 24], dst[HT_WIDTH * 24 + 2];
 +
@@ -341,7 +586,7 @@ new file mode 100644
 +            src[y*r.w+x] = value(r.x+x, r.y+y);
 +    dst[0] = 0x1234;
 +    dst[r.w*r.h+1] = 0x5678;
-+    ht_rect_t out = display_orient_pixels(r, src, dst+1);
++    ht_rect_t out = display_orient_pixels(r, src, dst+1, turns);
 +    assert(dst[0] == 0x1234 && dst[r.w*r.h+1] == 0x5678);
 +    assert(out.x >= 0 && out.y >= 0);
 +    assert(out.x+out.w <= HT_WIDTH && out.y+out.h <= HT_HEIGHT);
@@ -349,23 +594,27 @@ new file mode 100644
 +        for (int x = 0; x < out.w; x++) {
 +            int nx = out.x+x, ny = out.y+y;
 +            uint16_t tx = nx, ty = ny;
-+            display_orient_touch(&tx, &ty);
++            display_orient_touch(&tx, &ty, turns);
 +            assert(tx >= r.x && tx < r.x+r.w && ty >= r.y && ty < r.y+r.h);
 +            assert(dst[1+y*out.w+x] == value(tx, ty));
 +            native[ny*HT_WIDTH+nx] = dst[1+y*out.w+x];
 +        }
 +}
-+int main(void)
++static void test_turn(void)
 +{
 +    for (int y = 0; y < HT_HEIGHT; y += 24)
 +        paint_rect((ht_rect_t){0, y, HT_WIDTH, HT_HEIGHT-y < 24 ? HT_HEIGHT-y : 24});
 +    // Native left center becomes logical top center, where USB now exits.
 +    uint16_t x = 0, y = 233;
-+    display_orient_touch(&x, &y);
++    display_orient_touch(&x, &y, 1);
 +    assert(x == 232 && y == 0);
 +    for (int ny = 0; ny < HT_HEIGHT; ny++)
 +        for (int nx = 0; nx < HT_WIDTH; nx++)
-+            assert(native[ny*HT_WIDTH+nx] == value(HT_WIDTH-1-ny, nx));
++            {
++                int lx = turns == 1 ? 465-ny : turns == 2 ? 465-nx : turns == 3 ? ny : nx;
++                int ly = turns == 1 ? nx : turns == 2 ? 465-ny : turns == 3 ? 465-nx : ny;
++                assert(native[ny*HT_WIDTH+nx] == value(lx, ly));
++            }
 +    // Nonzero offsets, skinny edge updates and small edits taller than 24 rows.
 +    paint_rect((ht_rect_t){465, 0, 1, 466});
 +    paint_rect((ht_rect_t){0, 465, 466, 1});
@@ -375,5 +624,125 @@ new file mode 100644
 +        int w = 1+rand()%466, h = 1+rand()%24;
 +        paint_rect((ht_rect_t){rand()%(467-w), rand()%(467-h), w, h});
 +    }
-+    puts("orientation: PASS (full frame, partial damage, edges, buffer guards and inverse touch)");
 +}
++int main(void)
++{
++    for (turns = 0; turns < 4; turns++) test_turn();
++    puts("orientation: PASS (all four turns; full frame, partial damage, edges, guards and inverse touch)");
++}
+diff --git a/devices/harness-device/firmware/test/test_rotation_settings.py b/devices/harness-device/firmware/test/test_rotation_settings.py
+new file mode 100644
+--- /dev/null
++++ b/devices/harness-device/firmware/test/test_rotation_settings.py
+@@ -0,0 +1,111 @@
++"""Exercise production NVS, menu targets, selection dispatch and reboot worker."""
++from pathlib import Path
++import re
++import subprocess
++import tempfile
++
++root = Path(__file__).resolve().parents[1]
++ui = (root / 'main/ui/habitat/ui_habitat.c').read_text()
++config = (root / 'main/config_store.c').read_text()
++
++
++def function(source, name):
++    return re.search(r'^[^\n]*\b' + name + r'\([^;]*?\)\n\{.*?^\}', source, re.M | re.S).group(0)
++
++
++choose = ui.split('    case A_ROTATION_SET:\n', 1)[1].split('    case A_SETTINGS:', 1)[0]
++save = function(ui, 'worker').split('        case A_ROTATION_SET:\n', 1)[1].split('        case A_SETTINGS_SAVE:', 1)[0]
++code = r'''
++#include "terminal.h"
++#include <assert.h>
++#include <stdio.h>
++#include <string.h>
++#define DEVICE_WAVESHARE_STANDARD 1
++#define ESP_OK 0
++#define NVS_READONLY 0
++#define NVS_READWRITE 1
++#define FG 1
++#define BG 0
++#define DIM 2
++typedef int nvs_handle_t;
++static const char *NS="pair";
++static uint8_t stored, staged, current;
++static bool exists, open_error, set_error, commit_error;
++static unsigned writes, commits, restarts, queued, changes, toasts;
++static bool rotation_pending, voice, queue_full;
++static int nvs_open(const char*n,int mode,int*h){(void)n;(void)mode;*h=1;return open_error?-1:0;}
++static void nvs_close(int h){(void)h;}
++static int nvs_get_u8(int h,const char*k,uint8_t*v){(void)h;assert(!strcmp(k,"disp_rot"));if(exists)*v=stored;return exists?0:-1;}
++static int nvs_set_u8(int h,const char*k,uint8_t v){(void)h;assert(!strcmp(k,"disp_rot"));writes++;staged=v;return set_error?-1:0;}
++static int nvs_commit(int h){(void)h;commits++;if(!commit_error){stored=staged;exists=true;}return commit_error?-1:0;}
++static uint8_t display_get_rotation(void){return current;}
++enum { A_SETTINGS, A_TAB_DONE, A_ROTATION_SET };
++typedef struct {int kind,value;} action_t;
++static action_t pending;
++static bool queue(action_t a){if(queue_full)return false;pending=a;queued++;return true;}
++static bool audio_client_active(void){return voice;}
++static void ui_cable_toast(const char*m){assert(m[0]);toasts++;}
++static void change(void){changes++;}
++static void display_lock(void){}
++static void display_unlock(void){}
++static void esp_restart(void){restarts++;}
++static const ht_font_t test_font={.width=12,.height=20};
++#define ht_mono_20 test_font
++static struct {ht_rect_t rect;int action,value;bool enabled;char label[32];} hits[8];
++static unsigned count;
++static void control(ht_scene_t*f,int x,int y,int w,const char*label,int a,int v,bool enabled){
++ (void)f;assert(count<8);assert(strlen(label)*17<=(unsigned)w);hits[count].rect=(ht_rect_t){x,y-14,w,66};
++ hits[count].action=a;hits[count].value=v;hits[count].enabled=enabled;
++ snprintf(hits[count++].label,32,"%s",label);
++}
++static void heading(ht_scene_t*f,const char*t){(void)f;assert(!strcmp(t,"USB port"));}
++static int ht_measure_(const ht_font_t*f,const char*t){return f->width*(int)strlen(t);}
++#define ht_measure ht_measure_
++static void ht_text_(ht_scene_t*f,int x,int y,int w,const ht_font_t*font,uint16_t fg,uint16_t bg,const char*t){
++ (void)f;(void)x;(void)y;(void)w;(void)font;(void)fg;(void)bg;assert(t[0]);
++}
++#define ht_text ht_text_
++'''
++code += function(config, 'config_load_display_rotation') + '\n'
++code += function(config, 'config_save_display_rotation') + '\n'
++code += function(ui, 'render_device_controls') + '\n'
++code += function(ui, 'render_rotation') + '\n'
++code += 'static void choose(int value){action_t a={A_ROTATION_SET,value};switch(a.kind){case A_ROTATION_SET:\n' + choose + 'default:break;}}\n'
++code += 'static void save(action_t a){switch(a.kind){case A_ROTATION_SET:\n' + save + 'default:break;}}\n'
++code += r'''
++int main(void){
++ assert(config_load_display_rotation(1)==1 && config_load_display_rotation(0)==0);
++ for(int i=0;i<4;i++){assert(config_save_display_rotation(i));assert(config_load_display_rotation(1)==i);}
++ stored=99;assert(config_load_display_rotation(1)==1);
++ unsigned n=writes;assert(!config_save_display_rotation(4)&&writes==n);
++ open_error=true;assert(!config_save_display_rotation(0));assert(config_load_display_rotation(1)==1);open_error=false;
++ set_error=true;n=commits;assert(!config_save_display_rotation(0)&&commits==n);set_error=false;
++ current=1;stored=1;count=0;render_device_controls(NULL);
++ assert(count==2 && hits[0].action==A_SETTINGS && hits[1].action==A_TAB_DONE);
++ assert(hits[0].rect.y>362 && hits[0].rect.x+hits[0].rect.w<=hits[1].rect.x);
++ count=0;render_rotation(NULL);assert(count==4);
++ for(int i=0;i<4;i++){
++  assert(hits[i].value==i && hits[i].action==A_ROTATION_SET && hits[i].enabled==(i!=1));
++  if(i)assert(hits[i-1].rect.y+hits[i-1].rect.h<=hits[i].rect.y);
++ }
++ choose(-1);choose(4);choose(1);assert(!queued && !rotation_pending);
++ voice=true;choose(0);voice=false;assert(!queued);
++ queue_full=true;choose(0);queue_full=false;assert(!queued && !rotation_pending);
++ choose(0);assert(queued==1 && rotation_pending && current==1 && stored==1 && !restarts);
++ choose(2);assert(queued==1); // A second tap cannot queue a conflicting restart.
++ count=0;render_rotation(NULL);for(int i=0;i<4;i++)assert(!hits[i].enabled);
++ commit_error=true;save(pending);assert(!rotation_pending && !restarts && current==1 && stored==1);
++ commit_error=false;choose(3);save(pending);assert(restarts==1 && stored==3 && current==1);
++ current=config_load_display_rotation(1);rotation_pending=false;assert(current==3);
++ count=0;render_rotation(NULL);assert(!hits[3].enabled && hits[1].enabled);
++ assert(toasts==3 && changes>=3);
++ puts("rotation setting: PASS (NVS defaults/corruption/errors, four choices, targets, queue/voice guards, failed save and reboot persistence)");
++}
++'''
++with tempfile.TemporaryDirectory(prefix='waveshare-rotation-settings-') as directory:
++    path = Path(directory)
++    (path / 'test.c').write_text(code)
++    subprocess.run(['cc', '-std=c11', '-Wall', '-Wextra', '-Werror', '-O1', '-g',
++                    '-fsanitize=undefined,bounds', '-I', str(root / 'main/ui/habitat'),
++                    str(path / 'test.c'), '-o', str(path / 'test')], check=True)
++    subprocess.run([str(path / 'test')], check=True)

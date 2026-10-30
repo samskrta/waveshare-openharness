@@ -89,8 +89,8 @@ static void task(void *arg)
                 trusted = false;
             }
             if (down) {
-#ifdef DEVICE_WAVESHARE_USB_TOP
-                display_orient_touch(&x, &y);
+#ifdef DEVICE_WAVESHARE_STANDARD
+                display_orient_touch(&x, &y, display_get_rotation());
 #endif
                 last_good = now;
                 last_x = x;

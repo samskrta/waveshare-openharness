@@ -25,6 +25,10 @@ static ht_gallery_t gallery;
 #include "audio_client.h"
 #include "audio_capture.h"
 #include "config_store.h"
+#ifdef DEVICE_WAVESHARE_STANDARD
+#include "esp_system.h"
+static bool rotation_pending;
+#endif
 #include "cable_client.h"
 #include "pet_store.h"
 #include "../../elapsed.h"
@@ -89,6 +93,7 @@ typedef enum {
     DRAFT,
     DRAFT_OPTIONS,
     SETTINGS,
+    ROTATION,
     STOP,
     MODELS,
     MESSAGE,
@@ -118,6 +123,7 @@ typedef enum {
     A_NAP,
     A_SETTINGS_SAVE,
     A_SETTINGS,
+    A_ROTATION, A_ROTATION_SET,
     A_STOP,
     A_STOP_YES,
     A_MODELS,
@@ -1942,6 +1948,9 @@ static void render_answer_review(ht_scene_t *f)
 static const char *settings_item(int wanted, action_kind_t *action)
 {
     static const struct { const char *label; action_kind_t action; uint32_t feature; } items[] = {
+#ifdef DEVICE_WAVESHARE_STANDARD
+        {"Display rotation", A_ROTATION, 0},
+#endif
         {"Inbox", A_INBOX, 0}, {"Machines", A_MACHINES, 0},
         {"Model", A_MODELS, 0}, {"Stop current turn", A_STOP, 0},
         {"Nap", A_NAP, 0},
@@ -2131,14 +2140,28 @@ static void render_focus_tabs(ht_scene_t *f)
     }
     focus_carousel(f, &tab_carousel, tabs_total(), tab_label, A_TAB);
 }
+#ifdef DEVICE_WAVESHARE_STANDARD
+static void render_device_controls(ht_scene_t *f)
+{
+    // Separate footer targets, below the tab carousel's 110..362 contact area.
+    control(f, 100, 385, 150, "Controls", A_SETTINGS, 0, true);
+    control(f, 265, 385, 100, "Done", A_TAB_DONE, 0, true);
+}
+#endif
 static void render_tabs(ht_scene_t *f)
 {
+#ifdef DEVICE_WAVESHARE_STANDARD
+    render_device_controls(f);
+#else
     // Done is shared by every face, with the same generous bottom-edge target; green on Focus (design 2026-10-06).
     ht_text(f, (HT_WIDTH-ht_done_28.width)/2, 400, ht_done_28.width, &ht_done_28,
             character.id == HT_CHARACTER_FOCUS ? color(HT_THEME_VOICE) : FG, BG, HT_DONE);
+#endif
     if (character.id == HT_CHARACTER_FOCUS) {
         render_focus_tabs(f);
+#ifndef DEVICE_WAVESHARE_STANDARD
         s.hits[s.hit_count++] = (hit_t){{83, 392, 300, 74}, A_TAB_DONE, 0, true};
+#endif
         return;
     }
     ht_arc_title(f, DIM, "tabs");
@@ -2167,7 +2190,9 @@ static void render_tabs(ht_scene_t *f)
                 A_TAB, i, s.connected};
         }
     }
+#ifndef DEVICE_WAVESHARE_STANDARD
     s.hits[s.hit_count++] = (hit_t){{83, 392, 300, 74}, A_TAB_DONE, 0, true};
+#endif
 }
 static void render_notice(ht_scene_t *f)
 {
@@ -2521,7 +2546,7 @@ static void render_settings(ht_scene_t *f)
         const char *label = settings_item(s.offset + row, &action);
         if (!label) break;
         if (action == A_NAP) label = s.nap ? "Wake" : "Nap";
-        bool enabled = action == A_INBOX || action == A_NAP ||
+        bool enabled = action == A_INBOX || action == A_NAP || action == A_ROTATION ||
             (s.connected && ((action != A_STOP && action != A_MODELS && action != A_SELECT_BEGIN && action != A_LATEST) ||
                 (active() && (action != A_STOP || active()->busy) && (action != A_LATEST || !visit.pending))));
         int y = TAB_TOP + row * TAB_ROW_HEIGHT, hit = s.hit_count++;
@@ -2544,6 +2569,23 @@ static void render_settings(ht_scene_t *f)
  * under the display lock so the glass is right on the next frame, and this is what gets persisted.
  * Guarded by the display lock, like every other piece of `s`.
  */
+#ifdef DEVICE_WAVESHARE_STANDARD
+static void render_rotation(ht_scene_t *f)
+{
+    heading(f, "USB port");
+    static const char *const positions[] = {"Left", "Top", "Right", "Bottom"};
+    for (int i = 0; i < 4; i++) {
+        char label[24];
+        snprintf(label, sizeof label, "%s%s", positions[i],
+                 i == display_get_rotation() ? " (current)" : "");
+        control(f, 83, 134 + i * 68, 300, label, A_ROTATION_SET, i,
+                !rotation_pending && i != display_get_rotation());
+    }
+    const char *note = rotation_pending ? "Restarting..." : "Restarts device";
+    int width = ht_measure(&ht_mono_20, note);
+    ht_text(f, (HT_WIDTH - width) / 2, 398, width, &ht_mono_20, DIM, BG, note);
+}
+#endif
 static struct {
     ui_settings_t values;
     uint32_t fields;
@@ -2608,6 +2650,11 @@ bool habitat_scene_take(ht_scene_t *f)
         break;
     case SELECTION:
         render_selection(f);
+        break;
+    case ROTATION:
+#ifdef DEVICE_WAVESHARE_STANDARD
+        render_rotation(f);
+#endif
         break;
     case SETTINGS:
         render_settings(f);
@@ -3250,6 +3297,20 @@ static void dispatch(action_t a)
             change();
         }
         break;
+    case A_ROTATION:
+#ifdef DEVICE_WAVESHARE_STANDARD
+        view(ROTATION);
+#endif
+        break;
+    case A_ROTATION_SET:
+#ifdef DEVICE_WAVESHARE_STANDARD
+        if (a.value >= 0 && a.value < 4 && a.value != display_get_rotation() && !rotation_pending) {
+            if (audio_client_active()) ui_cable_toast("Finish voice before rotating.");
+            else if (queue(a)) { rotation_pending = true; change(); }
+            else ui_cable_toast("Device busy. Try again.");
+        }
+#endif
+        break;
     case A_SETTINGS:
         view(SETTINGS);
         break;
@@ -3435,6 +3496,17 @@ static void worker(void *unused)
             cable_client_agent_update(a.id, model, effort);
             break;
         }
+        case A_ROTATION_SET:
+#ifdef DEVICE_WAVESHARE_STANDARD
+            if (a.value >= 0 && a.value < 4 && config_save_display_rotation((uint8_t)a.value)) {
+                // Apply the image and touch together on boot, never mid-contact or mid-DMA.
+                esp_restart();
+            } else {
+                display_lock(); rotation_pending = false; change(); display_unlock();
+                ui_cable_toast("Rotation not saved. Try again.");
+            }
+#endif
+            break;
         case A_SETTINGS_SAVE: {
             // Everything the app asked for, written off the render path. The report at the end carries
             // what the device HOLDS, read back — which is what corrects a window whose change failed.

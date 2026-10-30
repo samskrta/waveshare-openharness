@@ -20,6 +20,11 @@ void config_store_init(void);
 uint8_t config_load_brightness(void);
 void    config_save_brightness(uint8_t level);
 
+// Counterclockwise image quarter-turns from the native left-USB orientation.
+// A missing/corrupt key uses the build's default; changing it takes effect on reboot.
+uint8_t config_load_display_rotation(uint8_t fallback);
+bool config_save_display_rotation(uint8_t turns);
+
 // Habitat starts muted. The saved preference survives firmware updates.
 bool config_load_muted(void);
 bool config_save_muted(bool muted);
