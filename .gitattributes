@@ -1,0 +1,8 @@
+* text=auto
+*.stl binary
+*.step binary
+*.stp binary
+*.bin binary
+*.png binary
+*.jpg binary
+*.patch -whitespace

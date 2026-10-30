@@ -1,0 +1,20 @@
+{
+  "board": "Waveshare ESP32-S3-Touch-AMOLED-1.75 standard",
+  "source_commit": "a270d3e787aed01e9b204abd11b0d8952a4fc071",
+  "profile": "-DDEVICE_BOARD=waveshare-standard",
+  "idf": "v5.5.4",
+  "hw": "waveshare-standard-1.75",
+  "firmware_version": "0.0.94",
+  "sha256": {
+    "app.bin": "7cba894d1d486be11f5da846a855765e70f32210e587b0966f6900290e042a46",
+    "bootloader.bin": "1c688b0a5b9fa9b21c6680fb013fcd828dddb1d631251f3b850bd8e5348995e3",
+    "partition-table.bin": "a8601f9bbcb818c72ba03680130b0c5a97441a18a4af66499637fdabaf20cd79",
+    "ota-data.bin": "7d2c7ac4888bfd75cd5f56e8d61f69595121183afc81556c876732fd3782c62f"
+  },
+  "offsets": {
+    "bootloader.bin": "0x0",
+    "partition-table.bin": "0x8000",
+    "ota-data.bin": "0xf000",
+    "app.bin": "0x20000"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "upstream": "autonomous-ai/openharness",
+  "base_commit": "a270d3e787aed01e9b204abd11b0d8952a4fc071",
+  "profile": "waveshare-standard",
+  "files": {
+    "main/CMakeLists.txt": "f513c98b8f058fdf5e0f50493839d693f07d5989a0607e0420f780b1326a771b",
+    "main/app_main.c": "ca0d6db49478c8a999b4c2c42ea0b78e9b2bf20c90482f0a7d68308fdaf05bae",
+    "main/board/board.c": "07a0d65acc2fa59c2b15dc9d97fbf9131e47e81f959deb92cac3be03f46f3d72",
+    "main/board/pins_dial.h": "1826bda64f8b6bddcf8fc5450632320060edcc20b78ef4d67810418c1cc992f6",
+    "main/board/power.c": "6a0babecd0b6f3defc64e5b1075fc1975408b6179da2f9f5e8fc0ecfb5f80ac4"
+  }
+}

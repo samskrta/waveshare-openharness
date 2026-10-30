@@ -1,0 +1,129 @@
+bash devices/harness-device/firmware/test/run.sh
+up to date: <build-root>/openharness/devices/harness-device/firmware/test/vectors/cable_frame.txt
+Tux: all eight shared moods, 36 frames, registered eyes/beak and RGB565 colours
+arc_geometry.inc up to date
+Focus relaxing: Claude juggles, Codex's plane, Muse's keepy-uppy; constant runs, exact redraws, grey arc line; others unchanged PASS
+Builder: Claude only, one draw per showing (2 chef, 2 builder), stable over 64 frames, bubble beside the hat PASS
+Inbox layout: desktop status colors, neutral prose, balanced short/long blocks, fixed gap, circle bounds and exact incremental redraws PASS
+Custom pet: resting, relaxing (v2), code-drawn working alert, r 230 clamp and a swap mid-scene PASS
+Characters: both adapters, eight moods, five sizes, pause/mic/wrap/swap and 2092 exact incremental redraws PASS
+Custom pet: resting, relaxing (v2), code-drawn working alert, r 230 clamp and a swap mid-scene PASS
+Character preference: missing/invalid keys, both boot defaults, 256 saved values and NVS failures PASS
+Character preference: missing/invalid keys, both boot defaults, 256 saved values and NVS failures PASS
+test_elapsed OK
+vectors: <build-root>/openharness/devices/harness-device/firmware/test/vectors/cable_frame.txt
+ok: 44 checks, 0 failure(s)
+native path:
+transport: PASS (8194 exact encodes, 20196 streams; bulk/byte/random splits, noise, CRC errors, reset and incomplete-tail equivalence)
+JSON guard: exact depth/size limits, escapes, NUL/trailing data, 100000 guarded frames PASS
+cable_machines
+  34 checks, 0 failures
+board: ok
+Shared I2C scenario 0: concurrent initialization, failure retry, bounded wait, stable cached handle PASS
+Shared I2C scenario 1: concurrent initialization, failure retry, bounded wait, stable cached handle PASS
+Shared I2C scenario 2: concurrent initialization, failure retry, bounded wait, stable cached handle PASS
+lock dot: exact old glyph bytes and nine-dot screen; 45120 unused font bytes removed
+arc: upper/lower clipped/full comparisons; UTF-8, removal, recoloring and warm-cache reuse passed
+Inline arrows: right/diagonal, native 20/28 px cells, curved label, no fallback or atlas overread PASS
+bell glyph: both native cells, no fallback, empty/active/count/clear incremental raster PASS
+Inbox status: check/question/cross glyphs, no fallback, incremental transitions PASS
+Curved shimmer: cached glyphs, clipped incremental redraws, rest/wake/wrap; peak dirty area 21560 pixels PASS
+Display fallback: all Unicode scalars, 3000 malformed-byte strings, bounded copies, fraction/math meaning, wrap/arc pixels and strict approvals PASS
+terminal: 503 incremental/full-frame equivalence checks; UTF-8, clipping, bounds, wrap passed
+arc pixels: Inter Medium 26 arcs (name face and lower face) kerned, ink in r230 and inside tight bounds, unclipped, own mask per face, fitted with an ellipsis
+arc pixels: per-glyph gains scale the proportional lower arc, none/full are ht_arc_status_face to the pixel
+arc pixels: all 52 upper/lower 24 px angle/color hashes preserved
+Hard proportional labels (Inter Medium 26, lower face): mask <=9008/9216B after fit (raw worst 9008 B, 0 re-fitted shorter), every label inks PASS
+Hard proportional labels (Inter Medium 26, upper arc): mask <=9070/9216B after fit (raw worst 9070 B, 0 re-fitted shorter), every label inks PASS
+Packed arcs: all 52 geometries <=4538/9216B; 227 glyphs at every angle, 4000 mixed/clipped labels match dense pixels; caches=21856B PASS
+arc bounds: Inter Medium 26 (lower face on both arcs, name face on the upper) matches too; 227 glyphs at every upper/lower rotation + 2000 mixed labels match full-cell pixels PASS
+inner arc: no name, an empty name or a mono face draws nothing and allocates nothing PASS
+inner arc: a short name is centred at 12 o'clock on the inner curve, its cache made on first draw PASS
+inner arc: a long name is cut to the inner span with an ellipsis, clear of the pet; the hardest marks fit the mask PASS
+inner arc: the title above it is laid out and drawn exactly as alone, and both masks stay cached PASS
+arc ring: band and span, bounds contain the ink, strips equal the full raster, placeholders empty, damage covers the change PASS
+cell zoom: ok
+test_pet_store: 99 checks, 0 failures
+voice_buffer: byte order, backpressure, wraparound, overflow refusal and 320ms gate passed
+Voice ring threads: 16777216 bytes in exact order across four capacities, backpressure and counter wrap PASS
+scroll: PASS (10 linear scenarios, reversal and brake window)
+gestures: PASS (single release, slow tap, voice guard, holds, wrap + 20,000 drag/cancel traces; written-control press survives 4 mm of drift at every duration)
+tab carousel: short slow swipes, 2:1 tracking, bounded flicks, soft edges, settled taps, brake, cancel and clock wrap PASS
+workspace: bounded preview, cancellation, single commit, exact tab/snapshot, deadlines and wraparound PASS
+supertab: order (stable, frame order without it), caps, UTF-8 cut, ids, unknown state PASS
+supertab: raise once, ask->stuck, clear on work/gone/swarm gone, bounded events PASS
+supertab: desk link, local Lead, list order, recap slot (one Lead, UTF-8 cut, none), reset PASS
+supertab: chat kind/id/name, old Leads as the Lead chat, recap only for the face's chat, the face's own reopen keeps it PASS
+supertab: Buddies on, the Buddy block and its avatar, a Buddy face, bad blocks dropped with the Lead kept PASS
+tim-motion: {"idle_seconds":60,"frames":18,"display_bytes":28224,"max_frame_bytes":1568}
+tim: PASS (bounded idle/event/mic damage, quiet, hidden screen, touch gaze, cooldown, wrap)
+octopus simulated idle: 380 redraws/min, 16604640 DMA pixel-bytes/min (no timing claim)
+octopus simulated working: 742 redraws/min, 33182016 DMA pixel-bytes/min (no timing claim)
+octopus simulated microphone: 840 redraws/min, 16805120 DMA pixel-bytes/min (no timing claim)
+octopus simulated recap: 380 redraws/min, 4403376 DMA pixel-bytes/min (no timing claim)
+octopus: PASS (63 poses; clocks/wrap; five layouts; touch/voice/hidden scheduling; 2542 incremental redraw checks; 80-byte motion state)
+Renderer reference: 2016 exact scenes/incremental frames and 288 additional full renders across four layouts/eight moods PASS
+ASCII scene: 10000 exact-length guarded assets + 2520 full portrait scenes match UTF-8 construction byte for byte PASS
+glyph cache: 6000 clipped mixed scenes + 252 complete poses match the original renderer; guards and warm reuse pass
+ASCII raster: 6000 clipped mixed scenes + 252 complete poses match the Unicode renderer; guards and warm reuse pass
+ASCII damage: 400000 original/fast comparisons + 252 creature transitions; exact rectangles, Unicode aliases and malformed bytes PASS
+Damage bands: 768 real layout/pose transitions + 2000 overlapping/clipped scenes, region-budget pressure and guarded partial redraws match full frames; 2565 smaller updates PASS
+ASCII clip: exact-capacity guards, 50000 valid rows in both decode modes + 100000 malformed metadata/run cases pass
+Octopus artwork: all 91854 decoded cells / 63 frames exactly match approved source
+gallery: 20 creatures x 4 modes x 320 frames; supported glyphs, bounded scenes, gestures and timer wrap pass
+gallery damage: 25520 samples, mean=20579 px, max=96084 px (full=217156)
+selection: bounded movement, identity, cancellation, queue failure and wraparound passed
+carry: frozen identity, bounded TTL, expiry, cancellation, congestion, duplicate/stale replies and wrap passed; state=584 bytes
+visit: correlated replies, chained visits, return, timeout/wrap, congestion, cancel; state=232 bytes
+form: stale/duplicate activation, busy, bounded drag, backpressure, timeout, wraparound passed; state=1336 bytes
+draft: PASS (revision/receipt ownership, transport refusal, timeout, recovery, at-most-once send and wraparound); state=984 bytes
+search UI: PASS (purpose, recipient, revision, match metadata, pending movement, no matches and late cancellation)
+draft UI: PASS (production validators/callbacks; bounded text, edit revision, voice ownership, receipt correlation and carry ownership)
+question UI: PASS (full prompt, focused choices, explicit review, correlated reads/receipts, stale commands, spoken drafts, pending and multi-select; 1920 full-capacity subsets preserve adjacent state); state=15352 bytes
+voice UI: PASS (production handlers; queued cancellation, discard/retry, late replies, modal ownership, timeout, cap, disconnect and hidden-capture recovery)
+Notification read: post-DMA only, sleep/lock, stale/identical replacements, read/open idempotence, questions, hidden empty bell, reconnect snapshots and bounded receipt history PASS
+Notification tiers: alert/list/silent, old-daemon flags, face, one row per agent, 6 h expiry and 8 s error PASS
+bell/inbox: empty/active glyphs, wide separate targets, arrivals/removal during contact, title/message open, no creature, voice restoration, caption rotation PASS
+Swarm tabs: exactly the desk tabs (closed Swarms never listed, with or without a window), closing the face's desk tab leaves the Swarm, linked desk tab kept with no agents, same font and ink, entered with no handshake, remembered Lead, hold to TABS, desk tabs unchanged PASS
+Swarm panes: project order, faces 2a-2h (time, recap card and cut, resting, wait text, stuck without red, remote read-only), swipe with wrap and no focus, one recap retry, PANES 3a-3c, follow the desktop, Lead gone, Swarm gone, side button PASS
+Swarm inbox: one entry per Lead, fixed lines, one beep (raise, stuck, either order with a wait), wait text and its close, never a question screen, no worker entries, kept across notif.replace, read on the face, bell pill and bubble, tap enters the Swarm, cleared on link loss PASS
+Swarm voice: a local Lead's face talks to its harness with its engine's scene or the seven bars, and returns to the Swarm's face PASS
+roster storage: sizeof(agent_t)=1840; full=1024; exact result prefixes and 64 full-roster permutations PASS
+pane memory: PASS (off-tab completion, returning panes, late restores, live activity, alternating work/results, 128-slot bound); 193024 bytes
+Pane/inbox soak: 200000 mixed updates, 256 identities, 2949 held contacts, 49 full rasters, cache/time wraps; bounds/identity/modal invariants PASS
+tab frames: long/UTF-8 names, bounds, clipped movement and exact partial redraw PASS
+touch UI: PASS (production contacts/renderers; voice start/finish/discard, target pinning, sensor cancellation, immediate scroll, swipes, round trips, congestion and holds)
+Swarm chats: work only for a working group, the face chat's recap, Lead/PM notices read on their face or unread with a beep, one entry per Lead, news across a snapshot, notice.read, Lead waits still alert PASS
+Swarm Buddies: swipe up for the Buddy (ring, avatar, dots, its recap), down for the PM, side kept across projects and following the daemon, the empty state, Buddies off unchanged, the quiet badge, voice with the Buddy's engine PASS
+Notification read: post-DMA only, sleep/lock, stale/identical replacements, read/open idempotence, questions, hidden empty bell, reconnect snapshots and bounded receipt history PASS
+Notification tiers: alert/list/silent, old-daemon flags, face, one row per agent, 6 h expiry and 8 s error PASS
+bell/inbox: empty/active glyphs, wide separate targets, arrivals/removal during contact, title/message open, no creature, voice restoration, caption rotation PASS
+Swarm tabs: exactly the desk tabs (closed Swarms never listed, with or without a window), closing the face's desk tab leaves the Swarm, linked desk tab kept with no agents, same font and ink, entered with no handshake, remembered Lead, hold to TABS, desk tabs unchanged PASS
+Swarm panes: project order, faces 2a-2h (time, recap card and cut, resting, wait text, stuck without red, remote read-only), swipe with wrap and no focus, one recap retry, PANES 3a-3c, follow the desktop, Lead gone, Swarm gone, side button PASS
+Swarm inbox: one entry per Lead, fixed lines, one beep (raise, stuck, either order with a wait), wait text and its close, never a question screen, no worker entries, kept across notif.replace, read on the face, bell pill and bubble, tap enters the Swarm, cleared on link loss PASS
+Swarm voice: a local Lead's face talks to its harness with its engine's scene or the seven bars, and returns to the Swarm's face PASS
+roster storage: sizeof(agent_t)=1840; full=1024; exact result prefixes and 64 full-roster permutations PASS
+pane memory: PASS (off-tab completion, returning panes, late restores, live activity, alternating work/results, 128-slot bound); 193024 bytes
+Pane/inbox soak: 200000 mixed updates, 256 identities, 2949 held contacts, 49 full rasters, cache/time wraps; bounds/identity/modal invariants PASS
+tab frames: long/UTF-8 names, bounds, clipped movement and exact partial redraw PASS
+touch UI: PASS (production contacts/renderers; voice start/finish/discard, target pinning, sensor cancellation, immediate scroll, swipes, round trips, congestion and holds)
+Swarm chats: work only for a working group, the face chat's recap, Lead/PM notices read on their face or unread with a beep, one entry per Lead, news across a snapshot, notice.read, Lead waits still alert PASS
+Swarm Buddies: swipe up for the Buddy (ring, avatar, dots, its recap), down for the PM, side kept across projects and following the daemon, the empty state, Buddies off unchanged, the quiet badge, voice with the Buddy's engine PASS
+Brightness: 101 app-set percentages survive a reboot exactly, 256 stored bytes load bounded and monotonic, neutral canvas throughout PASS
+Device settings: absent fields unchanged, refusals write nothing, every write staged off the render path PASS
+touch driver: PASS (production task + gallery; ACK/error recovery, wake gestures, power off/on during contact and sleep at dispatch)
+render guard: cross-core timestamp race, every stage, idle/sleep, timeout boundary and clock wrap PASS
+Display power: production render-loop wake/repaint and touch/idle races, quiet wake, boundaries and wrap PASS
+Machine UI: stale replies, authoritative selection, malformed IDs, bounded snapshots and timeout wrap PASS
+UI reload: 200000 concurrent handle publications/notifications, pre-registration request and exact pending consumption PASS
+agent snapshot: production reader rejects partial streams; exact roster/tab/count/generation, empty tabs and wrap PASS
+USB session: seven startup failures/retries, idempotence, early welcome, idle/error reads, timeout/reconnect and 64-bit wrap PASS
+cable idle: PASS (24599 production-reader traces; every interrupted-frame cut, idle/read-gap recovery, slow valid fragments, 64-bit clock and retained counters)
+OTA: malformed offers, overflow, stalled transfers, disconnect, 10 SDK failure paths, hash/version checks and 482 chunked images PASS (fake flash)
+USB logging: bounded contention, same-task recursion, ISR, late hook, truncation; exact framed bytes PASS
+Notification: exact 5760-sample waveform with 640B buffer; mute/mic/error release, 30 s coalescing, concurrency and wrap PASS (offline)
+Audio init: 12 microphone + 5 speaker failure points, partial channel allocation and retries, no leaked resources PASS (offline)
+Audio workers: 800 offline sessions; exact PCM order, failed begin/start, read retry/failure, USB failure, ring overflow, DMA loss and 32-bit wrap PASS
+Audio threads: 1000 concurrent offline sessions; exact PCM, pinned targets, explicit stop/abort, start/read/USB/overflow failures and immediate restart PASS
+Growth alignment: all ten species, three ages and both layouts share the adult centre PASS
+Illustrated companions: ten species, eight moods, two layouts, all growth/colour families and eight-hour clocks; 1462 exact incremental redraws PASS
