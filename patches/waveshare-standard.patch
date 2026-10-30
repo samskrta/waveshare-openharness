@@ -746,3 +746,420 @@ new file mode 100644
 +                    '-fsanitize=undefined,bounds', '-I', str(root / 'main/ui/habitat'),
 +                    str(path / 'test.c'), '-o', str(path / 'test')], check=True)
 +    subprocess.run([str(path / 'test')], check=True)
+diff --git a/devices/harness-device/firmware/main/ui/habitat/display_habitat.c b/devices/harness-device/firmware/main/ui/habitat/display_habitat.c
+index 05d6f98f60..5564f4c932 100644
+--- a/devices/harness-device/firmware/main/ui/habitat/display_habitat.c
++++ b/devices/harness-device/firmware/main/ui/habitat/display_habitat.c
+@@ -41,6 +41,8 @@ void cable_transport_benchmark(void);
+ #endif
+ 
+ #define STRIP_LINES 24
++#define ATTENTION_BRIGHT_MS 15000u
++#define ATTENTION_DIM_PERCENT 12u
+ static esp_lcd_panel_handle_t panel;
+ static SemaphoreHandle_t model_lock, dma_done;
+ static TaskHandle_t renderer;
+@@ -385,6 +387,8 @@ static void render_task(void *arg)
+     ESP_ERROR_CHECK(esp_timer_start_periodic(render_guard, 1000000));
+     int front = 0;
+     bool panel_on = true;
++    bool attention = false;
++    uint32_t attention_since = 0;
+     unsigned applied_brightness = 101;
+     for (;;) {
+         ESP_ERROR_CHECK(esp_task_wdt_reset());
+@@ -400,6 +404,11 @@ static void render_task(void *arg)
+         int64_t model_started = esp_timer_get_time();
+ #endif
+         habitat_tick();
++        bool actionable = habitat_actionable_wait();
++        uint32_t now = now_ms();
++        if (actionable && !attention) attention_since = now;
++        if (!actionable && attention) display_bump_activity();
++        attention = actionable;
+         bool fresh = habitat_scene_take(&scenes[front ^ 1]);
+         uint32_t receipt = habitat_scene_receipt();
+         uint32_t wake_ms = habitat_next_wake_ms();
+@@ -412,6 +421,9 @@ static void render_task(void *arg)
+ #endif
+         display_unlock();
+         unsigned brightness = atomic_load(&requested_brightness);
++        if (attention && now - attention_since >= ATTENTION_BRIGHT_MS &&
++            brightness > ATTENTION_DIM_PERCENT)
++            brightness = ATTENTION_DIM_PERCENT;
+         if (brightness != applied_brightness) {
+             render_progress(RENDER_POWER);
+             ESP_ERROR_CHECK(esp_lcd_panel_co5300_set_brightness(panel, brightness));
+@@ -453,11 +465,11 @@ static void render_task(void *arg)
+             front ^= 1;
+             painted = false;
+         }
+-        if (on && elapsed_since(&last_activity) > 300000) {
++        if (on && !attention && elapsed_since(&last_activity) > 300000) {
+             display_lock();
+             // A touch may have refreshed activity while we waited for this
+-            // lock. The stale pre-lock idle decision must not swallow it.
+-            if (elapsed_since(&last_activity) > 300000)
++            // lock. A question may also have arrived since the first check.
++            if (!habitat_actionable_wait() && elapsed_since(&last_activity) > 300000)
+                 display_sleep();
+             display_unlock();
+         }
+diff --git a/devices/harness-device/firmware/main/ui/habitat/focus.c b/devices/harness-device/firmware/main/ui/habitat/focus.c
+index 956269886c..a893e9803e 100644
+--- a/devices/harness-device/firmware/main/ui/habitat/focus.c
++++ b/devices/harness-device/firmware/main/ui/habitat/focus.c
+@@ -62,6 +62,7 @@ enum { MARK_SIZE = 56, TITLE_BOTTOM = HT_ARC_Y + HT_ARC_CELL_HEIGHT, COL_X = 41,
+ #define FOCUS_EMPTY   0x585863u
+ #define FOCUS_VOICE   0x00ff2fu
+ #define FOCUS_REST    0x9a9aa6u   // the relaxing face's lower-arc line: the working line's arc and font, quiet grey
++#define FOCUS_ATTENTION 0xffb020u
+ 
+ /*
+  * WHAT AN AGENT WITH NOTHING YET SAYS, in place of "No activity yet" (owner, 2026-10-01): an
+@@ -1035,7 +1036,9 @@ void ht_focus_face(ht_scene_t *s, const ht_character_face_t *f, uint8_t frame, u
+ 
+     // The scene's status on the lower curve (or in the slot above when a footer has the bottom); an empty slot otherwise (the count never moves).
+     int before = s->count;
+-    if (scene && !taken) {
++    if (f->asking) {
++        ht_arc_status_face(s, ht_rgb(FOCUS_ATTENTION), "Needs your answer", &ht_arc_inter_lower);
++    } else if (scene && !taken) {
+         char arc[HT_TEXT_BYTES];
+         status_fitted(arc, sizeof arc, f, NULL, &ht_arc_inter_lower, HT_ARC_SPAN);
+         ht_arc_status_face(s, ht_rgb(FOCUS_VOICE), arc, &ht_arc_inter_lower);
+diff --git a/devices/harness-device/firmware/main/ui/habitat/runtime.h b/devices/harness-device/firmware/main/ui/habitat/runtime.h
+index 4b4f44f4e6..eea44dbcea 100644
+--- a/devices/harness-device/firmware/main/ui/habitat/runtime.h
++++ b/devices/harness-device/firmware/main/ui/habitat/runtime.h
+@@ -2,6 +2,8 @@
+ #include "terminal.h"
+ // Model is protected by display_lock; DMA never holds that lock.
+ bool habitat_scene_take(ht_scene_t *out);
++// Caller holds the display lock. Snapshots and ordinary idle/busy state are not actionable.
++bool habitat_actionable_wait(void);
+ // Capture under the model lock after taking a scene, acknowledge only after
+ // its pixels finish DMA. Zero means there is no unread card in that frame.
+ uint32_t habitat_scene_receipt(void);
+diff --git a/devices/harness-device/firmware/main/ui/habitat/ui_habitat.c b/devices/harness-device/firmware/main/ui/habitat/ui_habitat.c
+index 3d03dc0095..e3fa8c7459 100644
+--- a/devices/harness-device/firmware/main/ui/habitat/ui_habitat.c
++++ b/devices/harness-device/firmware/main/ui/habitat/ui_habitat.c
+@@ -872,6 +872,10 @@ static int waiting(void)
+         n += s.notice[i].question;
+     return n;
+ }
++bool habitat_actionable_wait(void)
++{
++    return s.ready && s.connected && !s.nap && waiting() > 0;
++}
+ static int working(void)
+ {
+     int n = 0;
+@@ -1185,10 +1189,10 @@ static ht_character_mood_t character_mood(void)
+ {
+     if (!s.connected)
+         return HT_CHARACTER_OFFLINE;
+-    if (waiting())
+-        return HT_CHARACTER_ATTENTION;
+     if (s.nap)
+         return HT_CHARACTER_ASLEEP;
++    if (waiting())
++        return HT_CHARACTER_ATTENTION;
+     if (!s.quiet && (s.pet_pose == 1 || s.pet_pose == 2))
+         return HT_CHARACTER_BOOPED;
+     if (!s.quiet && s.pet_pose == 3)
+@@ -3250,6 +3254,7 @@ static void dispatch(action_t a)
+         s.nap = !s.nap;
+         s.nap_until = ms() + 15 * 60 * 1000;
+         change();
++        if (habitat_actionable_wait()) display_wake();
+         break;
+     case A_FIND:
+     case A_FORM: {
+@@ -3995,6 +4000,7 @@ void habitat_tick(void)
+     if (s.nap && (int32_t)(now - s.nap_until) >= 0) {
+         s.nap = false;
+         change();
++        if (habitat_actionable_wait()) display_wake();
+     }
+     if (s.voice_open) {
+         display_bump_activity();
+@@ -5032,9 +5038,10 @@ bool ui_question_show(const char *id, const char *name, const char *machine, con
+     // The question is shown on the home face, in the recap's place (render_home): no screen opens
+     // for it. The display wakes so a person glancing over sees it.
+     change();
+-    if (!face) display_wake();
++    bool alert = !face && !s.nap;
++    if (alert) display_wake();
+     display_unlock();
+-    return !face;
++    return alert;
+ }
+ void ui_question_state(const cJSON *p)
+ {
+@@ -5245,9 +5252,9 @@ static bool swarm_notice_raise(const ht_supertab_t *t, const ht_lead_t *l, bool
+     s.notice_sequence++;
+     bool face = on_face(l->id);
+     if (face) notice_read_now(l->id);
+-    else if (fresh) display_wake();
++    else if (fresh && !s.nap) display_wake();
+     change();
+-    return fresh && !face;
++    return fresh && !face && !s.nap;
+ }
+ static void swarm_notice_drop(const char *lead)
+ {
+diff --git a/devices/harness-device/firmware/test/test_character.c b/devices/harness-device/firmware/test/test_character.c
+index 4267ddeca7..2c5e5b7ef7 100644
+--- a/devices/harness-device/firmware/test/test_character.c
++++ b/devices/harness-device/firmware/test/test_character.c
+@@ -816,7 +816,10 @@ static void focus_face(void)
+                 int ww = (fr_->cols * fr_->cell * z + 7) / 8, hh = (fr_->rows * fr_->cell * z + 7) / 8;
+                 assert(frame == want->frame && mark->sprite.width == ww && mark->sprite.height == hh);
+                 assert(mark->x == (466 - ww) / 2);
+-                assert(!scene.runs[10].text[0] && !scene.runs[10].arc);   // no lower arc outside the scene
++                if (state == HT_PET_ASKING)
++                    assert(scene.runs[10].arc == 2 && scene.runs[10].fg == ht_rgb(0xffb020) &&
++                           !strcmp(scene.runs[10].text, "Needs your answer"));
++                else assert(!scene.runs[10].text[0] && !scene.runs[10].arc);
+                 // The 56 px box's top is where the same face with step 0 puts it: only dy moves the pet.
+                 ht_character_face_t g = f; g.clock_ms = 1;
+                 ht_scene_t rest; ht_scene_clear(&rest, 0);
+@@ -1056,7 +1059,9 @@ static void focus_face(void)
+         assert(scene.count == 11 && scene.runs[1].sprite.width == (cp->cells[0].cols * cp->cells[0].cell * 6 + 7) / 8 &&
+                !scene.runs[10].text[0]);
+         g.asking = true; ht_scene_clear(&scene, 0); ht_character_face(&scene, &c, &g, 0xffff, "");
+-        assert(scene.count == 11 && scene.runs[1].sprite.width == cp->w && scene.runs[7].text[0] && !scene.runs[10].text[0]);
++        assert(scene.count == 11 && scene.runs[1].sprite.width == cp->w && scene.runs[7].text[0] &&
++               scene.runs[10].arc == 2 && scene.runs[10].fg == ht_rgb(0xffb020) &&
++               !strcmp(scene.runs[10].text, "Needs your answer"));
+ 
+         // An engine without scenes working: its mark, the centred inter_30 green line, nothing on the lower arc.
+         ht_character_face_t x = {.recipient = "x", .engine = "cursor", .activity = "Coalescing", .elapsed = 34,
+@@ -1788,7 +1793,8 @@ static void focus_relaxing(void)
+         assert(sc.count == 11 && sc.runs[3].text[0] && !sc.runs[10].arc);
+         ht_character_face_t q = g; q.asking = true;
+         ht_scene_clear(&sc, 0); ht_character_face(&sc, &c, &q, 0xffff, "");
+-        assert(sc.count == 11 && !sc.runs[10].arc);
++        assert(sc.count == 11 && sc.runs[10].arc == 2 && sc.runs[10].fg == ht_rgb(0xffb020) &&
++               !strcmp(sc.runs[10].text, "Needs your answer"));
+         ht_character_face_t t = g; t.status = "Try again";
+         ht_scene_clear(&sc, 0); ht_character_face(&sc, &c, &t, 0xffff, "");
+         assert(sc.count == 11 && !sc.runs[10].arc && sc.runs[7].text[0]);
+diff --git a/devices/harness-device/firmware/test/test_display_power.py b/devices/harness-device/firmware/test/test_display_power.py
+index 358a843e20..1f41e82cbb 100644
+--- a/devices/harness-device/firmware/test/test_display_power.py
++++ b/devices/harness-device/firmware/test/test_display_power.py
+@@ -30,8 +30,13 @@ code = r'''
+ static atomic_bool asleep, force_frame;
+ static atomic_uint last_activity;
+ static atomic_uint requested_brightness = 40;
++#define ATTENTION_BRIGHT_MS 15000u
++#define ATTENTION_DIM_PERCENT 12u
+ #define ESP_LOGI(...) ((void)0)
+-static int esp_lcd_panel_co5300_set_brightness(int p, unsigned level) { (void)p; assert(level <= 100); return 0; }
++static unsigned brightness_seen[4], brightness_calls;
++static int esp_lcd_panel_co5300_set_brightness(int p, unsigned level) {
++    (void)p; assert(level <= 100); brightness_seen[brightness_calls++ % 4]=level; return 0;
++}
+ static void ht_illustrated_prepare(ht_scene_t *scene) { (void)scene; }
+ static ht_scene_t scenes[2];
+ static bool painted;
+@@ -40,6 +45,7 @@ static uint32_t clock_ms;
+ static unsigned frames, ticks, waits, locks, sleeps, wakes, full_frames, notifications;
+ static unsigned stop_after;
+ static int mode;
++static bool actionable;
+ static bool panel_on = true;
+ static int panel, render_guard;
+ static jmp_buf finished;
+@@ -69,9 +75,11 @@ static void display_lock(void) {
+     locks++;
+     // Touch wins the model lock while the renderer is waiting to auto-sleep.
+     if (mode==2 && locks==2) display_bump_activity();
++    if (mode==8 && locks==2) actionable=true;
+ }
+ static void display_unlock(void) {}
+ static void habitat_tick(void) { ticks++; }
++static bool habitat_actionable_wait(void) { return actionable; }
+ static bool habitat_scene_take(ht_scene_t *out) { (void)out; return mode==4 || mode==5; }
+ static unsigned receipts;
+ static uint32_t habitat_scene_receipt(void) { return mode==4 || mode==5 ? 77 : 0; }
+@@ -95,44 +103,58 @@ static unsigned ulTaskNotifyTake(int clear, uint32_t timeout) {
+     if (++waits==stop_after) longjmp(finished,1);
+     // Normal idle wake follows a quiet/asleep iteration, with no fresh model.
+     if (mode==3 && waits==1) display_wake();
++    if (mode==6 && waits==1) clock_ms+=ATTENTION_BRIGHT_MS;
++    if (mode==7 && waits==1) actionable=false;
+     return 0;
+ }
+ '''
+ for name in ['elapsed_since', 'display_bump_activity', 'display_sleep', 'display_wake', 'render_task']:
+     code += function(name)
+ code += r'''
+-static void run(int which, uint32_t now, uint32_t activity, bool sleep, unsigned loops) {
++static void run(int which, uint32_t now, uint32_t activity, bool sleep, bool wait, unsigned brightness, unsigned loops) {
+     mode=which; clock_ms=now; atomic_store(&last_activity,activity);
++    actionable=wait; atomic_store(&requested_brightness,brightness);
+     atomic_store(&asleep,sleep); atomic_store(&force_frame,false);
+     memset(scenes,0,sizeof scenes); painted=mode!=4; panel_on=true; receipts=0; power_cb=power;
+-    frames=ticks=waits=locks=sleeps=wakes=full_frames=notifications=0;
++    frames=ticks=waits=locks=sleeps=wakes=full_frames=notifications=brightness_calls=0;
+     stop_after=loops;
+     if (!setjmp(finished)) render_task(NULL);
+     assert(waits==loops);
+ }
+ int main(void) {
+-    run(4,1000,1000,false,1); assert(frames==1 && receipts==1);
+-    run(5,1000,1000,true,1); assert(!frames && !receipts);
++    run(4,1000,1000,false,false,40,1); assert(frames==1 && receipts==1);
++    run(5,1000,1000,true,false,40,1); assert(!frames && !receipts);
+     // A wake between power sampling and force-frame consumption must survive.
+-    run(1,1000,1000,true,2);
++    run(1,1000,1000,true,false,40,2);
+     assert(!display_is_asleep() && panel_on && wakes==1);
+     assert(frames==1 && full_frames==1);
+     // The idle decision must re-check activity once it owns the model lock.
+-    run(2,300001,0,false,1);
++    run(2,300001,0,false,false,40,1);
+     assert(!display_is_asleep() && !sleeps);
+     // Still/quiet screens repaint on wake even when the scene never changes.
+-    run(3,1000,1000,true,2);
++    run(3,1000,1000,true,false,40,2);
+     assert(frames==1 && full_frames==1 && panel_on);
+     // Normal idle expiry, the boundary, and the 32-bit uptime wrap.
+-    run(0,300001,0,false,1); assert(display_is_asleep() && sleeps==1);
+-    run(0,300000,0,false,1); assert(!display_is_asleep() && !sleeps);
+-    run(0,100,UINT32_MAX-100,false,1); assert(!display_is_asleep() && !sleeps);
+-    run(0,299900,UINT32_MAX-100,false,1); assert(display_is_asleep() && sleeps==1);
++    run(0,300001,0,false,false,40,1); assert(display_is_asleep() && sleeps==1);
++    run(0,300000,0,false,false,40,1); assert(!display_is_asleep() && !sleeps);
++    run(0,100,UINT32_MAX-100,false,false,40,1); assert(!display_is_asleep() && !sleeps);
++    run(0,299900,UINT32_MAX-100,false,false,40,1); assert(display_is_asleep() && sleeps==1);
++    // Actionable waits hold the panel awake, dim after 15 s without changing the saved request,
++    // and resolving the final wait starts a fresh five-minute idle period.
++    run(0,300001,0,false,true,40,1); assert(!display_is_asleep() && !sleeps && brightness_seen[0]==40);
++    run(6,1000,1000,false,true,40,2); assert(brightness_calls==2 && brightness_seen[0]==40 && brightness_seen[1]==12);
++    run(6,1000,1000,false,true,8,2); assert(brightness_calls==1 && brightness_seen[0]==8);
++    run(7,300001,0,false,true,40,2); assert(!display_is_asleep() && atomic_load(&last_activity)==clock_ms);
++    // Renderer attention never overrides an explicit screen-off; only a real event edge wakes it.
++    run(0,1000,1000,true,true,40,1); assert(display_is_asleep() && !wakes);
++    // Arrival while the renderer is taking the sleep lock wins the second predicate check.
++    run(8,300001,0,false,false,40,1); assert(!display_is_asleep() && !sleeps);
+     // Repeated requests are idempotent; no extra callbacks/notifications.
++    display_sleep();
+     unsigned n=notifications, s=sleeps, w=wakes;
+     display_sleep(); assert(notifications==n && sleeps==s);
+     display_wake(); display_wake(); assert(notifications==n+1 && wakes==w+1);
+-    puts("Display power: production render-loop wake/repaint and touch/idle races, quiet wake, boundaries and wrap PASS");
++    puts("Display power: wake/repaint races, actionable brightness/idle policy, explicit off and wrap PASS");
+ }
+ '''
+ with tempfile.TemporaryDirectory(prefix='harness-display-power-') as folder:
+diff --git a/devices/harness-device/firmware/test/test_question_ui.py b/devices/harness-device/firmware/test/test_question_ui.py
+index bef31a9268..1cd82f0f4f 100644
+--- a/devices/harness-device/firmware/test/test_question_ui.py
++++ b/devices/harness-device/firmware/test/test_question_ui.py
+@@ -50,7 +50,7 @@ static cJSON object(cJSON *children,int n) {
+     for (int i=0;i<n;i++) children[i].next=i+1<n ? &children[i+1] : NULL;
+     return (cJSON){.type=JOBJECT,.child=n ? children : NULL};
+ }
+-static struct { question_t q; bool voice_open,voice_waiting,touch_down; uint32_t voice_question_revision,notice_sequence; int voice_question_index; view_t voice_return; char title[80],message[256]; view_t view; int offset,pressed,hit_count,active,notice_count; char pending_focus[ID_MAX],opening_notice[ID_MAX]; bool connected; hit_t hits[24]; } s;
++static struct { question_t q; bool voice_open,voice_waiting,touch_down; uint32_t voice_question_revision,notice_sequence; int voice_question_index; view_t voice_return; char title[80],message[256]; view_t view; int offset,pressed,hit_count,active,notice_count; char pending_focus[ID_MAX],opening_notice[ID_MAX]; bool connected,ready,nap; struct { bool question; } notice[4]; hit_t hits[24]; } s;
+ typedef struct { char id[64],name[96]; } agent_t;
+ static agent_t agents[2]={{.id="a",.name="Research helper"},{.id="b",.name="Remote helper"}};
+ static bool b_known;
+@@ -115,7 +115,7 @@ static int ui_rows(const char *t,const ht_font_t *f,int w){return ht_text_rows(t
+ static bool ui_can_display(const char *t,const ht_font_t *f,int w,int l){return ht_can_display(t,f,w,l);}
+ static int ui_wrap(ht_scene_t *s,int x,int y,int w,int n,int skip,const ht_font_t *f,uint16_t fg,const char *t){return ht_wrap(s,x,y,w,n,skip,f,fg,t);}
+ '''
+-for name in ['notice_sync_view','copy','control','text','center','heading','question_view','question_rows',
++for name in ['waiting','habitat_actionable_wait','notice_sync_view','copy','control','text','center','heading','question_view','question_rows',
+              'question_text','render_question','render_choices','render_answer_review',
+              'open_question','question_answer','question_move','send_answer',
+              'question_load','ui_question_show','ui_question_state','ui_answer_receipt','ui_question_close','ui_focus_project','ui_voice_question']:
+@@ -169,7 +169,7 @@ static void recording(void) {
+ }
+ static const char *long_question="The helper found three related places using the old token. Should this change apply only to this file, across the whole project including tests, or should we leave the current behavior in place until the next release?";
+ static void reset(bool multi) {
+-    memset(&s,0,sizeof s);s.connected=true;s.pressed=-1;
++    memset(&s,0,sizeof s);s.connected=s.ready=true;s.pressed=-1;
+     congested=pending_receipt=false;transport_ok=true;queued_answers=sent_answers=removed=reads=0;
+     open_question();assert(s.q.loading && s.view==QUESTION);work(queued);assert(reads==1);
+     state("wrong",s.q.fetch,"token-a",multi,long_question);assert(s.q.loading);
+@@ -248,6 +248,15 @@ int main(int argc,char **argv) {
+     wakes=0;notices=0;face_agent="b";
+     assert(!ui_question_show("b","Other","M2","q-b3",NULL) && wakes==0 && notices==1 && read_now==1);
+     face_agent="";
++    // Only connected, non-Nap pinned questions are actionable. Multiple rows keep attention
++    // active until the final one resolves; reconnecting cached state does not itself wake.
++    wakes=0;s.notice_count=2;s.notice[0].question=s.notice[1].question=true;
++    assert(habitat_actionable_wait());s.notice[0].question=false;assert(habitat_actionable_wait());
++    s.notice[1].question=false;assert(!habitat_actionable_wait());s.notice[1].question=true;
++    s.connected=false;assert(!habitat_actionable_wait());s.connected=true;assert(habitat_actionable_wait() && !wakes);
++    s.nap=true;assert(!habitat_actionable_wait());
++    assert(!ui_question_show("b","Other","M2","q-nap",NULL) && !wakes);
++    s.nap=false;
+     // The ESP32 compiler's -O0 restrict analysis sees the enclosing global s,
+     // not the disjoint options/answer fields. Exercise every selected subset
+     // at their real capacities and prove that no neighboring state changes.
+diff --git a/devices/harness-device/firmware/test/test_voice_ui.py b/devices/harness-device/firmware/test/test_voice_ui.py
+index bf532f952a..ed6fba0679 100644
+--- a/devices/harness-device/firmware/test/test_voice_ui.py
++++ b/devices/harness-device/firmware/test/test_voice_ui.py
+@@ -69,8 +69,8 @@ static struct {
+     struct { bool live_summary; } memory[PANE_MEMORY_MAX];
+ } s;
+ static uint32_t now;
+-static bool audio_active, recording, abort_requested, queue_full;
+-static int starts, stops, aborts, cancels, confirms, scroll, gesture, reviews;
++static bool audio_active, recording, abort_requested, queue_full, actionable;
++static int starts, stops, aborts, cancels, confirms, scroll, gesture, reviews, wakes;
+ static action_t queued;
+ static agent_t *active(void) { return &s.agents[0]; }
+ #define COPY(dst, src) snprintf(dst, sizeof(dst), "%s", (src) ? (src) : "")
+@@ -81,6 +81,8 @@ void surface_tick(uint32_t value) { (void)value; }
+ void display_lock(void) {}
+ void display_unlock(void) {}
+ void display_bump_activity(void) {}
++bool habitat_actionable_wait(void) { return actionable; }
++void display_wake(void) { wakes++; }
+ void ht_scroll_cancel(int *value) { (void)value; }
+ void ht_gesture_guard(int *value, uint32_t time) { (void)value; (void)time; }
+ void ht_gesture_cancel(int *value) { (void)value; }
+@@ -325,6 +327,9 @@ int main(void) {
+     // The daemon a link drops forgets the Swarm Lead open here: the next one is told again (test_touch_ui.py).
+     sw.opened = true; ui_set_connected(false); assert(!sw.opened);
+ 
++    reset(); s.nap=true; s.nap_until=now; actionable=true; habitat_tick();
++    assert(!s.nap && wakes==1); actionable=false;
++
+     reset(); begin(); now = 601000; habitat_tick();
+     assert(stops == 1 && s.voice_waiting);
+     deadline = s.voice_wait_until;
+diff --git a/devices/harness-device/firmware/main/ui/habitat/focus.c b/devices/harness-device/firmware/main/ui/habitat/focus.c
+--- a/devices/harness-device/firmware/main/ui/habitat/focus.c
++++ b/devices/harness-device/firmware/main/ui/habitat/focus.c
+@@ -1036,7 +1036,7 @@ void ht_focus_face(ht_scene_t *s, const ht_character_face_t *f, uint8_t frame, u
+ 
+     // The scene's status on the lower curve (or in the slot above when a footer has the bottom); an empty slot otherwise (the count never moves).
+     int before = s->count;
+-    if (f->asking) {
++    if (f->asking && !taken) {
+         ht_arc_status_face(s, ht_rgb(FOCUS_ATTENTION), "Needs your answer", &ht_arc_inter_lower);
+     } else if (scene && !taken) {
+         char arc[HT_TEXT_BYTES];
+diff --git a/devices/harness-device/firmware/test/test_character.c b/devices/harness-device/firmware/test/test_character.c
+--- a/devices/harness-device/firmware/test/test_character.c
++++ b/devices/harness-device/firmware/test/test_character.c
+@@ -1795,6 +1795,9 @@ static void focus_relaxing(void)
+         ht_scene_clear(&sc, 0); ht_character_face(&sc, &c, &q, 0xffff, "");
+         assert(sc.count == 11 && sc.runs[10].arc == 2 && sc.runs[10].fg == ht_rgb(0xffb020) &&
+                !strcmp(sc.runs[10].text, "Needs your answer"));
++        q.footer_action = true;
++        ht_scene_clear(&sc, 0); ht_character_face(&sc, &c, &q, 0xffff, "");
++        assert(sc.count == 11 && !sc.runs[10].arc && !sc.runs[10].text[0]);
+         ht_character_face_t t = g; t.status = "Try again";
+         ht_scene_clear(&sc, 0); ht_character_face(&sc, &c, &t, 0xffff, "");
+         assert(sc.count == 11 && !sc.runs[10].arc && sc.runs[7].text[0]);

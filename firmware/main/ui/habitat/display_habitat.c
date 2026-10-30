@@ -41,6 +41,8 @@ void cable_transport_benchmark(void);
 #endif
 
 #define STRIP_LINES 24
+#define ATTENTION_BRIGHT_MS 15000u
+#define ATTENTION_DIM_PERCENT 12u
 static esp_lcd_panel_handle_t panel;
 static SemaphoreHandle_t model_lock, dma_done;
 static TaskHandle_t renderer;
@@ -385,6 +387,8 @@ static void render_task(void *arg)
     ESP_ERROR_CHECK(esp_timer_start_periodic(render_guard, 1000000));
     int front = 0;
     bool panel_on = true;
+    bool attention = false;
+    uint32_t attention_since = 0;
     unsigned applied_brightness = 101;
     for (;;) {
         ESP_ERROR_CHECK(esp_task_wdt_reset());
@@ -400,6 +404,11 @@ static void render_task(void *arg)
         int64_t model_started = esp_timer_get_time();
 #endif
         habitat_tick();
+        bool actionable = habitat_actionable_wait();
+        uint32_t now = now_ms();
+        if (actionable && !attention) attention_since = now;
+        if (!actionable && attention) display_bump_activity();
+        attention = actionable;
         bool fresh = habitat_scene_take(&scenes[front ^ 1]);
         uint32_t receipt = habitat_scene_receipt();
         uint32_t wake_ms = habitat_next_wake_ms();
@@ -412,6 +421,9 @@ static void render_task(void *arg)
 #endif
         display_unlock();
         unsigned brightness = atomic_load(&requested_brightness);
+        if (attention && now - attention_since >= ATTENTION_BRIGHT_MS &&
+            brightness > ATTENTION_DIM_PERCENT)
+            brightness = ATTENTION_DIM_PERCENT;
         if (brightness != applied_brightness) {
             render_progress(RENDER_POWER);
             ESP_ERROR_CHECK(esp_lcd_panel_co5300_set_brightness(panel, brightness));
@@ -453,11 +465,11 @@ static void render_task(void *arg)
             front ^= 1;
             painted = false;
         }
-        if (on && elapsed_since(&last_activity) > 300000) {
+        if (on && !attention && elapsed_since(&last_activity) > 300000) {
             display_lock();
             // A touch may have refreshed activity while we waited for this
-            // lock. The stale pre-lock idle decision must not swallow it.
-            if (elapsed_since(&last_activity) > 300000)
+            // lock. A question may also have arrived since the first check.
+            if (!habitat_actionable_wait() && elapsed_since(&last_activity) > 300000)
                 display_sleep();
             display_unlock();
         }

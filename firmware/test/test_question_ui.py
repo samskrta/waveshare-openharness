@@ -50,7 +50,7 @@ static cJSON object(cJSON *children,int n) {
     for (int i=0;i<n;i++) children[i].next=i+1<n ? &children[i+1] : NULL;
     return (cJSON){.type=JOBJECT,.child=n ? children : NULL};
 }
-static struct { question_t q; bool voice_open,voice_waiting,touch_down; uint32_t voice_question_revision,notice_sequence; int voice_question_index; view_t voice_return; char title[80],message[256]; view_t view; int offset,pressed,hit_count,active,notice_count; char pending_focus[ID_MAX],opening_notice[ID_MAX]; bool connected; hit_t hits[24]; } s;
+static struct { question_t q; bool voice_open,voice_waiting,touch_down; uint32_t voice_question_revision,notice_sequence; int voice_question_index; view_t voice_return; char title[80],message[256]; view_t view; int offset,pressed,hit_count,active,notice_count; char pending_focus[ID_MAX],opening_notice[ID_MAX]; bool connected,ready,nap; struct { bool question; } notice[4]; hit_t hits[24]; } s;
 typedef struct { char id[64],name[96]; } agent_t;
 static agent_t agents[2]={{.id="a",.name="Research helper"},{.id="b",.name="Remote helper"}};
 static bool b_known;
@@ -115,7 +115,7 @@ static int ui_rows(const char *t,const ht_font_t *f,int w){return ht_text_rows(t
 static bool ui_can_display(const char *t,const ht_font_t *f,int w,int l){return ht_can_display(t,f,w,l);}
 static int ui_wrap(ht_scene_t *s,int x,int y,int w,int n,int skip,const ht_font_t *f,uint16_t fg,const char *t){return ht_wrap(s,x,y,w,n,skip,f,fg,t);}
 '''
-for name in ['notice_sync_view','copy','control','text','center','heading','question_view','question_rows',
+for name in ['waiting','habitat_actionable_wait','notice_sync_view','copy','control','text','center','heading','question_view','question_rows',
              'question_text','render_question','render_choices','render_answer_review',
              'open_question','question_answer','question_move','send_answer',
              'question_load','ui_question_show','ui_question_state','ui_answer_receipt','ui_question_close','ui_focus_project','ui_voice_question']:
@@ -169,7 +169,7 @@ static void recording(void) {
 }
 static const char *long_question="The helper found three related places using the old token. Should this change apply only to this file, across the whole project including tests, or should we leave the current behavior in place until the next release?";
 static void reset(bool multi) {
-    memset(&s,0,sizeof s);s.connected=true;s.pressed=-1;
+    memset(&s,0,sizeof s);s.connected=s.ready=true;s.pressed=-1;
     congested=pending_receipt=false;transport_ok=true;queued_answers=sent_answers=removed=reads=0;
     open_question();assert(s.q.loading && s.view==QUESTION);work(queued);assert(reads==1);
     state("wrong",s.q.fetch,"token-a",multi,long_question);assert(s.q.loading);
@@ -248,6 +248,15 @@ int main(int argc,char **argv) {
     wakes=0;notices=0;face_agent="b";
     assert(!ui_question_show("b","Other","M2","q-b3",NULL) && wakes==0 && notices==1 && read_now==1);
     face_agent="";
+    // Only connected, non-Nap pinned questions are actionable. Multiple rows keep attention
+    // active until the final one resolves; reconnecting cached state does not itself wake.
+    wakes=0;s.notice_count=2;s.notice[0].question=s.notice[1].question=true;
+    assert(habitat_actionable_wait());s.notice[0].question=false;assert(habitat_actionable_wait());
+    s.notice[1].question=false;assert(!habitat_actionable_wait());s.notice[1].question=true;
+    s.connected=false;assert(!habitat_actionable_wait());s.connected=true;assert(habitat_actionable_wait() && !wakes);
+    s.nap=true;assert(!habitat_actionable_wait());
+    assert(!ui_question_show("b","Other","M2","q-nap",NULL) && !wakes);
+    s.nap=false;
     // The ESP32 compiler's -O0 restrict analysis sees the enclosing global s,
     // not the disjoint options/answer fields. Exercise every selected subset
     // at their real capacities and prove that no neighboring state changes.

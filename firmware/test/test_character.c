@@ -816,7 +816,10 @@ static void focus_face(void)
                 int ww = (fr_->cols * fr_->cell * z + 7) / 8, hh = (fr_->rows * fr_->cell * z + 7) / 8;
                 assert(frame == want->frame && mark->sprite.width == ww && mark->sprite.height == hh);
                 assert(mark->x == (466 - ww) / 2);
-                assert(!scene.runs[10].text[0] && !scene.runs[10].arc);   // no lower arc outside the scene
+                if (state == HT_PET_ASKING)
+                    assert(scene.runs[10].arc == 2 && scene.runs[10].fg == ht_rgb(0xffb020) &&
+                           !strcmp(scene.runs[10].text, "Needs your answer"));
+                else assert(!scene.runs[10].text[0] && !scene.runs[10].arc);
                 // The 56 px box's top is where the same face with step 0 puts it: only dy moves the pet.
                 ht_character_face_t g = f; g.clock_ms = 1;
                 ht_scene_t rest; ht_scene_clear(&rest, 0);
@@ -1056,7 +1059,9 @@ static void focus_face(void)
         assert(scene.count == 11 && scene.runs[1].sprite.width == (cp->cells[0].cols * cp->cells[0].cell * 6 + 7) / 8 &&
                !scene.runs[10].text[0]);
         g.asking = true; ht_scene_clear(&scene, 0); ht_character_face(&scene, &c, &g, 0xffff, "");
-        assert(scene.count == 11 && scene.runs[1].sprite.width == cp->w && scene.runs[7].text[0] && !scene.runs[10].text[0]);
+        assert(scene.count == 11 && scene.runs[1].sprite.width == cp->w && scene.runs[7].text[0] &&
+               scene.runs[10].arc == 2 && scene.runs[10].fg == ht_rgb(0xffb020) &&
+               !strcmp(scene.runs[10].text, "Needs your answer"));
 
         // An engine without scenes working: its mark, the centred inter_30 green line, nothing on the lower arc.
         ht_character_face_t x = {.recipient = "x", .engine = "cursor", .activity = "Coalescing", .elapsed = 34,
@@ -1788,7 +1793,11 @@ static void focus_relaxing(void)
         assert(sc.count == 11 && sc.runs[3].text[0] && !sc.runs[10].arc);
         ht_character_face_t q = g; q.asking = true;
         ht_scene_clear(&sc, 0); ht_character_face(&sc, &c, &q, 0xffff, "");
-        assert(sc.count == 11 && !sc.runs[10].arc);
+        assert(sc.count == 11 && sc.runs[10].arc == 2 && sc.runs[10].fg == ht_rgb(0xffb020) &&
+               !strcmp(sc.runs[10].text, "Needs your answer"));
+        q.footer_action = true;
+        ht_scene_clear(&sc, 0); ht_character_face(&sc, &c, &q, 0xffff, "");
+        assert(sc.count == 11 && !sc.runs[10].arc && !sc.runs[10].text[0]);
         ht_character_face_t t = g; t.status = "Try again";
         ht_scene_clear(&sc, 0); ht_character_face(&sc, &c, &t, 0xffff, "");
         assert(sc.count == 11 && !sc.runs[10].arc && sc.runs[7].text[0]);

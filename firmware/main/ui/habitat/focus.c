@@ -62,6 +62,7 @@ enum { MARK_SIZE = 56, TITLE_BOTTOM = HT_ARC_Y + HT_ARC_CELL_HEIGHT, COL_X = 41,
 #define FOCUS_EMPTY   0x585863u
 #define FOCUS_VOICE   0x00ff2fu
 #define FOCUS_REST    0x9a9aa6u   // the relaxing face's lower-arc line: the working line's arc and font, quiet grey
+#define FOCUS_ATTENTION 0xffb020u
 
 /*
  * WHAT AN AGENT WITH NOTHING YET SAYS, in place of "No activity yet" (owner, 2026-10-01): an
@@ -1035,7 +1036,9 @@ void ht_focus_face(ht_scene_t *s, const ht_character_face_t *f, uint8_t frame, u
 
     // The scene's status on the lower curve (or in the slot above when a footer has the bottom); an empty slot otherwise (the count never moves).
     int before = s->count;
-    if (scene && !taken) {
+    if (f->asking && !taken) {
+        ht_arc_status_face(s, ht_rgb(FOCUS_ATTENTION), "Needs your answer", &ht_arc_inter_lower);
+    } else if (scene && !taken) {
         char arc[HT_TEXT_BYTES];
         status_fitted(arc, sizeof arc, f, NULL, &ht_arc_inter_lower, HT_ARC_SPAN);
         ht_arc_status_face(s, ht_rgb(FOCUS_VOICE), arc, &ht_arc_inter_lower);

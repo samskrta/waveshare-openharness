@@ -11,13 +11,19 @@
     "main/config_store.c": "618f9c80f98213355cf7c7f75ad6b37fe82881726552eea6691144cc8c8dfd77",
     "main/config_store.h": "f4510db6c125dcc828ceaa0772681a185ab6f7f1b5140d3d8e9620da869a735a",
     "main/ui/display.h": "4ee70fe1931adab75c51de8d5f8f4f5246facd84db60a668b327c62997fa90e7",
-    "main/ui/habitat/display_habitat.c": "3fdf5cab44f36a78447be3815dd5f32a39eee8023c2db94ca4fd6b94b5f079d6",
+    "main/ui/habitat/display_habitat.c": "37cf3ba0dd28b6e5de2dc9edd3fd759199ed7f38a1c7dd7412a799d69baa2379",
+    "main/ui/habitat/focus.c": "1c3992e3870552ddd61c51df62364a164173c822eb24a0d7f979112ea397d609",
     "main/ui/habitat/orientation.h": "436a9b7107fff8cf02246756c21e22dc4bb73e5fb15f6c2ccb6a15cba2772939",
+    "main/ui/habitat/runtime.h": "95d7d55fd8403fcb0ba26a0bc13f38f076f97d65f8126158b3f211b60ff80e9b",
     "main/ui/habitat/touch_habitat.c": "1d3c6e0842ba28500e502213e16a895f6de615c3d2be384507db7f9fd4a99597",
-    "main/ui/habitat/ui_habitat.c": "97a18eecd830ffa7bd747d6ca7dc797a10792b4e8727c66de911aea87402b85c",
+    "main/ui/habitat/ui_habitat.c": "91a48ca34bb2554e11c244cb079739c3d94b5bb5da6c26ad5d5a0571e30b9c96",
     "test/run.sh": "e7aead59a38919afa4a61aa9465425b360a2e970c49e34423faf6406beb55281",
+    "test/test_character.c": "2496ee5f94cd11aac256806e194daec22777cbd13f10eb0735048b86b60a422c",
+    "test/test_display_power.py": "e7fd0bbe7220c2e413c43cc64a6c49afb359d95f42eaec9c94370d99d11b2c28",
     "test/test_orientation.c": "e702e1aad3d69383cdf751eae61cd41af8478674cd6c470bc23e23f0b21e68fe",
-    "test/test_rotation_settings.py": "910f853b64577212f7bbb7b10ccef2cf4037860866553af241bfc5d149d83938"
+    "test/test_question_ui.py": "dec52a392c4c67c4f33396fd1757a6377e201264c40ef6f94fb9a0a7793f7ce1",
+    "test/test_rotation_settings.py": "910f853b64577212f7bbb7b10ccef2cf4037860866553af241bfc5d149d83938",
+    "test/test_voice_ui.py": "8ae7dbdefd23e81100effbcef1752a15c56ebc0196e9b45ed4f28dd3fe979ada"
   },
   "usb_position": "saved preference; default top"
 }
