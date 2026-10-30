@@ -13,7 +13,7 @@
 #include "device_mac.h"
 #include "esp_app_desc.h"
 #include "esp_log.h"
-#include "audio_capture.h"   // audio_notify_done() — the completion beep
+#include "audio_capture.h"   // typed waiting, attention and completion cues
 #include "audio_client.h"
 #include "esp_timer.h"
 #include "fw_update.h"
@@ -938,6 +938,22 @@ static bool id_fits(const char *s)
 {
     return s && s[0] && strlen(s) < ID_MAX;
 }
+
+// Question frames can be replayed after reconnect. Remember a small bounded
+// window across session_down so restored waits update the UI without speaking.
+#define ANNOUNCED_QUESTIONS 16
+#define ANNOUNCED_QUESTION_ID 64
+static char s_announced_questions[ANNOUNCED_QUESTIONS][ANNOUNCED_QUESTION_ID];
+static uint8_t s_announced_question_next;
+static bool question_audio_fresh(const char *request)
+{
+    if (!request || !request[0] || strlen(request) >= ANNOUNCED_QUESTION_ID) return false;
+    for (int i = 0; i < ANNOUNCED_QUESTIONS; i++)
+        if (!strcmp(s_announced_questions[i], request)) return false;
+    snprintf(s_announced_questions[s_announced_question_next], ANNOUNCED_QUESTION_ID, "%s", request);
+    s_announced_question_next = (uint8_t)((s_announced_question_next + 1) % ANNOUNCED_QUESTIONS);
+    return true;
+}
 static void handle_supertabs(const cJSON *p)
 {
     const cJSON *ids = cJSON_GetObjectItemCaseSensitive(p, "ids");
@@ -991,8 +1007,7 @@ static void handle_supertab(const cJSON *p)
     const cJSON *count = cJSON_GetObjectItemCaseSensitive(p, "count");   // absent: the Leads listed
     card.count = cJSON_IsNumber(count) ? (count->valuedouble > 0 ? (count->valuedouble > 65535 ? 65535 : (uint16_t)count->valuedouble) : 0)
                                        : card.lead_n;
-    // A Lead that starts needing a person, off the face: the same coalesced beep as a question.
-    if (ui_supertab(&card)) audio_notify_done();
+    if (ui_supertab(&card)) audio_notify(AUDIO_NOTIFY_WAITING);
 }
 // `supertab.recap`: one Lead's last message. The model cuts it to 1,500 bytes; `none` is "no message yet".
 static void handle_supertab_recap(const cJSON *p)
@@ -1020,7 +1035,7 @@ static void handle_supertab_notice(const cJSON *p)
     ht_chat_kind_t kind = !strcmp(chat, "pm") ? HT_CHAT_PM : !strcmp(chat, "buddy") ? HT_CHAT_BUDDY : HT_CHAT_LEAD;
     if (ui_supertab_notice(tab, lead, kind, chat_id, text,
                            secs > 4294967295.0 ? 0xFFFFFFFFu : (uint32_t)secs))
-        audio_notify_done();
+        audio_notify(AUDIO_NOTIFY_ATTENTION);
 }
 // `supertab.notice.read` {tab, lead, chatId}: the desktop opened that chat, so its alert is read.
 static void handle_supertab_notice_read(const cJSON *p)
@@ -1044,17 +1059,20 @@ static void handle_question(const cJSON *p, const char *agent_id)
     if (agent_id && swarm && swarm[0]) {
         const char *request = str_of(p, "id"), *attention = str_of(p, "attention");
         if (!request || !request[0] || strlen(request) >= 64) return;
+        bool fresh = question_audio_fresh(request);
         if (ui_supertab_wait(agent_id, request, swarm, attention && !strcmp(attention, "stuck"),
-                             str_of(cJSON_GetArrayItem(questions, 0), "q")))
-            audio_notify_done();
+                             str_of(cJSON_GetArrayItem(questions, 0), "q")) && fresh)
+            audio_notify(AUDIO_NOTIFY_WAITING);
         return;
     }
     // The name rides on the frame for the same reason as on `summary`: the asker may be off this tab.
     if (agent_id && questions) {
         // A question is an alert: pinned row, wake and a (coalesced) beep, all but the beep inside
         // ui_question_show, which stays quiet for the pane already on the glass.
-        if (ui_question_show(agent_id, str_of(p, "name"), str_of(p, "machine"), str_of(p, "id"), questions))
-            audio_notify_done();
+        const char *request = str_of(p, "id");
+        bool fresh = question_audio_fresh(request);
+        if (ui_question_show(agent_id, str_of(p, "name"), str_of(p, "machine"), request, questions) && fresh)
+            audio_notify(AUDIO_NOTIFY_WAITING);
     }
 }
 // Somebody else answered it. A question is a dialog in a tmux pane, not a shared object, so this is
@@ -1487,15 +1505,16 @@ static void handle_message(const cJSON *root)
         // emits done THEN summary; an empty or phantom turn emits only done — so a session that briefly
         // registers and vanishes stays silent, and the notification always carries a real recap.
         //
-        // THE TIER decides everything else (daemon, 2026-10-19): `alert` beeps, wakes and celebrates,
+        // THE TIER decides everything else (daemon, 2026-10-19): `alert` cues, wakes and celebrates,
         // `list` only files a drawer row, `silent` files nothing. ui_notify_summary maps an old daemon's
-        // `silent`/`quiet` flags when there is no tier, and says whether to beep: an alert, and not for
-        // the pane already on the glass. The beep itself coalesces to one per 30 s in audio_notify_done.
+        // `silent`/`quiet` flags when there is no tier. Audio is deliberately stricter: only an explicit
+        // live `alert` tier gets the completion cue, never a legacy fallback or restored summary.
         // WHO IT IS ABOUT rides on the frame: the dial holds one tab's agents, and this turn may have
         // finished on any of them.
+        const char *tier = str_of(p, "tier");
         if (ui_notify_summary(agent_id, str_of(p, "name"), str_of(p, "machine"), str_of(p, "recap"),
-                              str_of(p, "tier"), bool_of(p, "quiet"), bool_of(p, "silent")))
-            audio_notify_done();
+                              tier, bool_of(p, "quiet"), bool_of(p, "silent")) && tier && !strcmp(tier, "alert"))
+            audio_notify(AUDIO_NOTIFY_COMPLETE);
         return;
     }
     // The WINDOW looked at this agent — its drawer row here is stale. The tap's half of this pair
@@ -1517,7 +1536,7 @@ static void handle_message(const cJSON *root)
         if (agent_id) ui_project_emit(agent_id, "", "done", "", NULL);
         // A failure is an alert: it beeps (coalesced) unless that pane is already on the glass.
         if (agent_id ? ui_turn_error(agent_id, str_of(p, "message")) : (ui_cable_toast(str_of(p, "message")), false))
-            audio_notify_done();
+            audio_notify(AUDIO_NOTIFY_ATTENTION);
         return;
     }
     if (strcmp(t,"question.state")==0) { ui_question_state(p); return; }

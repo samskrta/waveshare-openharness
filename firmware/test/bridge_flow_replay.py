@@ -34,7 +34,8 @@ static int64_t s_last_rx_us;
 static uint32_t s_bad, s_unknown;
 static int64_t esp_timer_get_time(void) { return (int64_t)fake_ms * 1000 + 1; }
 static void fw_update_slice(const uint8_t *p, size_t n) { (void)p; (void)n; assert(!"Unexpected firmware write in replay"); }
-static void audio_notify_done(void) {} // no real speaker or audio hardware in this harness
+typedef enum { AUDIO_NOTIFY_ATTENTION, AUDIO_NOTIFY_WAITING, AUDIO_NOTIFY_COMPLETE } audio_notify_cue_t;
+static void audio_notify(audio_notify_cue_t cue) { (void)cue; } // no speaker or audio hardware in this harness
 '''
     extra += function('str_of') + function('bool_of')
     extra += prefix + identity + events + '    assert(!"Unexpected message in turn/result replay");\n}\n'

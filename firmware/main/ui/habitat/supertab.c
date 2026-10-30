@@ -169,7 +169,9 @@ int ht_supertabs_put(ht_supertabs_t *s, const ht_supertab_t *in, uint32_t now_ms
         const ht_lead_t *was = NULL;
         for (int k = 0; k < t->lead_n && !was; k++) if (!strcmp(t->leads[k].id, in->leads[i].id)) was = &t->leads[k];
         ht_lead_state_t now = in->leads[i].state;
-        if (asking(now) && (!was || was->state != now))
+        // The first authoritative card after connect is baseline state, not a
+        // fresh request. Only a live transition into/between actionable states alerts.
+        if (asking(now) && was && was->state != now)
             events = emit(ev, ev_max, events, now == HT_LEAD_ASK ? HT_LEAD_RAISED_ASK : HT_LEAD_RAISED_STUCK, in->id, in->leads[i].id);
         else if (!asking(now) && was && asking(was->state))
             events = emit(ev, ev_max, events, HT_LEAD_CLEARED, in->id, in->leads[i].id);
