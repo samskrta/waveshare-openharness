@@ -1540,7 +1540,7 @@ static void swarm_pane_checks(const char *dir) {
     // 2c "docs" needs you, here: its wait's question takes the recap's place, in the asking pose.
     enter_at("s1", "L2");
     ui_supertab_recap("s1", "L2", "", "Docs drafted.", 1792560000u, false);
-    assert(!ui_supertab_wait("h2", "supertab:w1", "openharness", false, "Publish the docs today?"));   // on the face: no beep
+    assert(ui_supertab_wait("h2", "supertab:w1", "openharness", false, "Publish the docs today?"));   // on-face: cue, no wake
     scene_take(); assert(scene_says("Publish the docs") && !scene_says("Docs drafted."));
     FOCUS_PAGE("swarm-2c");
     // 2d "firmware" stuck: the daemon's "Stuck: …" in the same card, and no red anywhere.
@@ -1830,9 +1830,9 @@ static void swarm_inbox_checks(const char *dir) {
     { cable_notif_t desk[2] = {{.agent_id = "a", .name = "Payments refactor", .summary = "Shipped."}, {.agent_id = "b", .name = "Agent B", .summary = "Done."}};
       ui_notif_replace(desk, 2); assert(swarm_entry("L2") >= 0 && swarm_entry("L3") >= 0 && s.notice_count == 4);
       ui_notif_replace(desk, 0); assert(swarm_entry("L2") >= 0 && swarm_entry("L3") >= 0 && s.notice_count == 2); }
-    // An entry for the Lead on the face is read at once, with no beep.
+    // An actionable entry for the Lead on the face is read at once and still emits the waiting cue.
     swarm_setup(); enter_at("s1", "L4");
-    calm_card("ask", "ask"); assert(!card_send()); assert(swarm_entry("L4") >= 0 && s.notice[swarm_entry("L4")].read_on_dial);
+    calm_card("ask", "ask"); assert(card_send()); assert(swarm_entry("L4") >= 0 && s.notice[swarm_entry("L4")].read_on_dial);
     // 4a in a desk tab, the bell pill at y 400 counts the Swarm entries; 4b on a working Clawd, its bubble instead.
     swarm_setup(); scene_take();
     { bool pill = false; for (int i = 0; i < scene.count; i++) pill |= scene.runs[i].box.h == 32 && scene.runs[i].y == 400;

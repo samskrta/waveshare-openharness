@@ -3722,3 +3722,143 @@ index 7295bbe3e5..c542de0534 100644
  }
  '''
  with tempfile.TemporaryDirectory(prefix='harness-notify-') as folder:
+diff --git a/devices/harness-device/firmware/main/cable_client.c b/devices/harness-device/firmware/main/cable_client.c
+index 8231552719..57860e7a57 100644
+--- a/devices/harness-device/firmware/main/cable_client.c
++++ b/devices/harness-device/firmware/main/cable_client.c
+@@ -1067,8 +1067,8 @@ static void handle_question(const cJSON *p, const char *agent_id)
+     }
+     // The name rides on the frame for the same reason as on `summary`: the asker may be off this tab.
+     if (agent_id && questions) {
+-        // A question is an alert: pinned row, wake and a (coalesced) beep, all but the beep inside
+-        // ui_question_show, which stays quiet for the pane already on the glass.
++        // A question is an alert: pinned row, wake and a (coalesced) cue, all but the cue inside
++        // ui_question_show. The cue stays quiet only in Nap or while the question is being read.
+         const char *request = str_of(p, "id");
+         bool fresh = question_audio_fresh(request);
+         if (ui_question_show(agent_id, str_of(p, "name"), str_of(p, "machine"), request, questions) && fresh)
+diff --git a/devices/harness-device/firmware/main/ui/habitat/ui_habitat.c b/devices/harness-device/firmware/main/ui/habitat/ui_habitat.c
+index a86f9ef690..e87e93fef8 100644
+--- a/devices/harness-device/firmware/main/ui/habitat/ui_habitat.c
++++ b/devices/harness-device/firmware/main/ui/habitat/ui_habitat.c
+@@ -5040,9 +5040,9 @@ bool ui_question_show(const char *id, const char *name, const char *machine, con
+     // The question is shown on the home face, in the recap's place (render_home): no screen opens
+     // for it. The display wakes so a person glancing over sees it.
+     change();
+-    bool alert = !face && !s.nap;
+-    bool audible = alert && !question_view(s.view);
+-    if (alert) display_wake();
++    bool wake = !face && !s.nap;
++    bool audible = !s.nap && !question_view(s.view);
++    if (wake) display_wake();
+     display_unlock();
+     return audible;
+ }
+@@ -5257,7 +5257,7 @@ static bool swarm_notice_raise(const ht_supertab_t *t, const ht_lead_t *l, bool
+     if (face) notice_read_now(l->id);
+     else if (fresh && !s.nap) display_wake();
+     change();
+-    return fresh && !face && !s.nap && !question_view(s.view);
++    return fresh && !s.nap && !question_view(s.view);
+ }
+ static void swarm_notice_drop(const char *lead)
+ {
+diff --git a/devices/harness-device/firmware/main/ui/ui_screens.h b/devices/harness-device/firmware/main/ui/ui_screens.h
+index 5ef0b8c7aa..ed0ba7c0e2 100644
+--- a/devices/harness-device/firmware/main/ui/ui_screens.h
++++ b/devices/harness-device/firmware/main/ui/ui_screens.h
+@@ -256,7 +256,8 @@ void ui_swarms_replace(const cable_swarm_t *rows, int count, const char *selecte
+ // --- The Swarms (Super Tabs; cable_client.h). Each is safe from the reader task. ---
+ // The `supertabs` list: the Swarms shown, in order. A Swarm gone from it leaves the list and the inbox.
+ void ui_supertabs_ids(const char ids[][ID_MAX], int n);
+-// One Swarm's card. True for a fresh off-face actionable transition eligible for the waiting cue.
++// One Swarm's card. True for a fresh actionable transition eligible for the waiting cue; Nap and an open
++// question-reading view remain silent. An already-visible Lead is marked read without a redundant wake.
+ bool ui_supertab(const ht_supertab_t *in);
+ // `chat_id`: the chat the text is the last message of, "" from a daemon without swarmChat. Dropped for another chat.
+ void ui_supertab_recap(const char *tab, const char *lead, const char *chat_id, const char *text, uint32_t at, bool none);
+@@ -267,7 +268,7 @@ bool ui_supertab_notice(const char *tab, const char *lead, ht_chat_kind_t chat,
+ // The desktop opened that chat (`supertab.notice.read`): the entry goes.
+ void ui_supertab_notice_read(const char *tab, const char *lead, const char *chat_id);
+ // A Super Tab wait from harness `agent_id` (some Lead's `local`). It only sets that Lead's inbox text and face;
+-// it never opens the question screen. True when eligible for the waiting cue.
++// it never opens the question screen. True when eligible for the waiting cue; Nap and question reading stay silent.
+ bool ui_supertab_wait(const char *agent_id, const char *request, const char *swarm_name, bool stuck, const char *text);
+ void ui_supertab_wait_close(const char *agent_id, const char *request);
+ // Link lost: forget every Swarm and its inbox entries.
+@@ -469,7 +470,8 @@ void ui_project_set_agents(const char *project_id, const struct cJSON *agents);
+ // Also records it behind the bell: a blocked agent is counted, and stays counted until the question is
+ // ANSWERED rather than until somebody looks at it. Not gated on the window having the agent on screen —
+ // showing a question asks the window to bring it forward, so that gate could never open.
+-// True when waiting audio is eligible: off-face, awake from Nap, and not while another question is being read.
++// True when waiting audio is eligible: awake from Nap and not while another question is being read. An
++// already-visible agent is marked read without a redundant display wake, but the fresh cue still sounds.
+ bool ui_question_show(const char *project_id, const char *agent_name, const char *machine, const char *request_id, const struct cJSON *questions);
+ // That question was answered somewhere else (the app, or the pane by hand) — leave the screen instead of
+ // waiting for an answer that can no longer be delivered. No-op unless THIS request is the one on screen.
+diff --git a/devices/harness-device/firmware/test/test_audio_routing.py b/devices/harness-device/firmware/test/test_audio_routing.py
+index 3ac7e0a6f1..7d85338f98 100644
+--- a/devices/harness-device/firmware/test/test_audio_routing.py
++++ b/devices/harness-device/firmware/test/test_audio_routing.py
+@@ -26,9 +26,13 @@ assert 'audio_notify(AUDIO_NOTIFY_ATTENTION)' in error
+ done = message[message.index('if (strcmp(t, "turn.done")'):message.index('if (strcmp(t, "summary")')]
+ assert 'audio_notify(' not in done
+ 
+-assert '!question_view(s.view)' in function(ui, 'ui_question_show')
++question_ui = function(ui, 'ui_question_show')
++assert '!question_view(s.view)' in question_ui
++assert 'bool audible = !s.nap && !question_view(s.view);' in question_ui
+ assert '!question_view(s.view)' in function(ui, 'ui_notify_summary')
+ assert '!question_view(s.view)' in function(ui, 'ui_turn_error')
+-assert '!question_view(s.view)' in function(ui, 'swarm_notice_raise')
++swarm_wait = function(ui, 'swarm_notice_raise')
++assert '!question_view(s.view)' in swarm_wait
++assert 'return fresh && !s.nap && !question_view(s.view);' in swarm_wait
+ assert '!question_view(s.view)' in function(ui, 'ui_supertab_notice')
+ print('Cable audio routing: waiting/attention/exact-live-alert completion and reading guards PASS')
+diff --git a/devices/harness-device/firmware/test/test_question_ui.py b/devices/harness-device/firmware/test/test_question_ui.py
+index 1cd82f0f4f..25458ae734 100644
+--- a/devices/harness-device/firmware/test/test_question_ui.py
++++ b/devices/harness-device/firmware/test/test_question_ui.py
+@@ -244,10 +244,14 @@ int main(int argc,char **argv) {
+     // does wake the display, and it still counts in the bell until it is answered.
+     reset(false);view(HOME);wakes=0;notices=0;
+     assert(ui_question_show("b","Other","M2","q-b2",NULL) && s.view==HOME && wakes==1 && notices==1 && !read_now);
+-    // The pane on the face already shows its question: still filed, but read at once, no wake, no beep.
++    // The pane on the face already shows its question: still filed and read at once, with no redundant
++    // wake. It remains audible because seeing an agent face is not the same as reading the question UI.
+     wakes=0;notices=0;face_agent="b";
+-    assert(!ui_question_show("b","Other","M2","q-b3",NULL) && wakes==0 && notices==1 && read_now==1);
++    assert(ui_question_show("b","Other","M2","q-b3",NULL) && wakes==0 && notices==1 && read_now==1);
+     face_agent="";
++    s.view=QUESTION;
++    assert(!ui_question_show("b","Other","M2","q-reading",NULL));
++    s.view=HOME;
+     // Only connected, non-Nap pinned questions are actionable. Multiple rows keep attention
+     // active until the final one resolves; reconnecting cached state does not itself wake.
+     wakes=0;s.notice_count=2;s.notice[0].question=s.notice[1].question=true;
+diff --git a/devices/harness-device/firmware/test/test_touch_ui.py b/devices/harness-device/firmware/test/test_touch_ui.py
+index 70796b5cb1..74f3d578cc 100644
+--- a/devices/harness-device/firmware/test/test_touch_ui.py
++++ b/devices/harness-device/firmware/test/test_touch_ui.py
+@@ -1540,7 +1540,7 @@ static void swarm_pane_checks(const char *dir) {
+     // 2c "docs" needs you, here: its wait's question takes the recap's place, in the asking pose.
+     enter_at("s1", "L2");
+     ui_supertab_recap("s1", "L2", "", "Docs drafted.", 1792560000u, false);
+-    assert(!ui_supertab_wait("h2", "supertab:w1", "openharness", false, "Publish the docs today?"));   // on the face: no beep
++    assert(ui_supertab_wait("h2", "supertab:w1", "openharness", false, "Publish the docs today?"));   // on-face: cue, no wake
+     scene_take(); assert(scene_says("Publish the docs") && !scene_says("Docs drafted."));
+     FOCUS_PAGE("swarm-2c");
+     // 2d "firmware" stuck: the daemon's "Stuck: …" in the same card, and no red anywhere.
+@@ -1830,9 +1830,9 @@ static void swarm_inbox_checks(const char *dir) {
+     { cable_notif_t desk[2] = {{.agent_id = "a", .name = "Payments refactor", .summary = "Shipped."}, {.agent_id = "b", .name = "Agent B", .summary = "Done."}};
+       ui_notif_replace(desk, 2); assert(swarm_entry("L2") >= 0 && swarm_entry("L3") >= 0 && s.notice_count == 4);
+       ui_notif_replace(desk, 0); assert(swarm_entry("L2") >= 0 && swarm_entry("L3") >= 0 && s.notice_count == 2); }
+-    // An entry for the Lead on the face is read at once, with no beep.
++    // An actionable entry for the Lead on the face is read at once and still emits the waiting cue.
+     swarm_setup(); enter_at("s1", "L4");
+-    calm_card("ask", "ask"); assert(!card_send()); assert(swarm_entry("L4") >= 0 && s.notice[swarm_entry("L4")].read_on_dial);
++    calm_card("ask", "ask"); assert(card_send()); assert(swarm_entry("L4") >= 0 && s.notice[swarm_entry("L4")].read_on_dial);
+     // 4a in a desk tab, the bell pill at y 400 counts the Swarm entries; 4b on a working Clawd, its bubble instead.
+     swarm_setup(); scene_take();
+     { bool pill = false; for (int i = 0; i < scene.count; i++) pill |= scene.runs[i].box.h == 32 && scene.runs[i].y == 400;

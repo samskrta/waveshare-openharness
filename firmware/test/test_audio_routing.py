@@ -26,9 +26,13 @@ assert 'audio_notify(AUDIO_NOTIFY_ATTENTION)' in error
 done = message[message.index('if (strcmp(t, "turn.done")'):message.index('if (strcmp(t, "summary")')]
 assert 'audio_notify(' not in done
 
-assert '!question_view(s.view)' in function(ui, 'ui_question_show')
+question_ui = function(ui, 'ui_question_show')
+assert '!question_view(s.view)' in question_ui
+assert 'bool audible = !s.nap && !question_view(s.view);' in question_ui
 assert '!question_view(s.view)' in function(ui, 'ui_notify_summary')
 assert '!question_view(s.view)' in function(ui, 'ui_turn_error')
-assert '!question_view(s.view)' in function(ui, 'swarm_notice_raise')
+swarm_wait = function(ui, 'swarm_notice_raise')
+assert '!question_view(s.view)' in swarm_wait
+assert 'return fresh && !s.nap && !question_view(s.view);' in swarm_wait
 assert '!question_view(s.view)' in function(ui, 'ui_supertab_notice')
 print('Cable audio routing: waiting/attention/exact-live-alert completion and reading guards PASS')

@@ -18,7 +18,7 @@ Pinned Harness questions, including Super Tab ask/stuck waits, wake the AMOLED i
 
 Notification audio identifies the event without turning ordinary idle into an alert:
 
-- a fresh genuine question, approval, or actionable Super Tab transition says “Waiting.” once;
+- a fresh genuine question, approval, or actionable Super Tab transition says “Waiting.” once, even when that agent or Lead face is already visible (without redundantly waking it);
 - a live completion with an explicit `tier:"alert"` plays a short two-note procedural cue;
 - errors and off-face Lead/PM notices retain the established three-beep attention cue.
 
