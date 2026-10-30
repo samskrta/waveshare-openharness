@@ -30,7 +30,7 @@ The former separate Front_Bezel, Speaker_Cradle and Bottom_Cover are superseded.
 - **Speaker_Fit_Coupon:** 30.8 × 20.8 mm pocket with R2 corners. Confirm the supplied rounded speaker fits without force.
 - **USB_Rim_Fit_Coupon:** an 11 mm-deep section of the actual shell, including its continuous rim, USB tunnel and service bores. Seat the complete cased unit from behind, orient USB at the top, and check that your cable fully inserts without loading the case or rim. Verify button/microphone alignment before the full print.
 
-The USB and service-hole depths are inferred from the manufacturer's drawing; that drawing does not dimension every center. The reference plug body is **13.4 mm wide × 6.4 mm thick**, with 0.3 mm nominal clearance per side in a 14 × 7 mm slot. Your cable's overmold may differ. Test the actual unit/cable in the rim coupon and adjust the parameters if necessary.
+The USB and service-hole depths are inferred from the manufacturer's drawing; that drawing does not dimension every center. The USB opening was moved 5 mm farther behind the face after the first physical housing showed the connector against the opening's lower edge. The reference plug body is **13.4 mm wide × 6.4 mm thick**, with 0.3 mm nominal clearance per side in a 14 × 7 mm slot. Your cable's overmold may differ. Reprint and test the USB rim coupon with the actual unit/cable before printing the full housing.
 
 ![USB opening without and with the compact-plug envelope](USB_Port_Detail.png)
 
@@ -45,8 +45,8 @@ The USB and service-hole depths are inferred from the manufacturer's drawing; th
 | Case front behind the face | 1.5 mm |
 | Nominal front rim padding allowance | 0.2 mm |
 | Main spherical skin | 1.9 mm nominal |
-| Top USB slot | 14 × 7 mm, R2 corners, center 5.3 mm behind face |
-| Material above USB slot | 1.8 mm to the face plane; no break in the front rim |
+| Top USB slot | 14 × 7 mm, R2 corners, center 10.3 mm behind face |
+| Material above USB slot | 6.8 mm to the face plane; no break in the front rim |
 | PWR/BOOT service bores | Ø2.0 mm, lower diagonals |
 | Microphone bores | Ø1.4 mm, upper diagonals |
 | Speaker pocket | 30.8 × 20.8 mm; retained depth 7.2 mm |

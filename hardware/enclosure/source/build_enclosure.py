@@ -20,7 +20,7 @@ P={
  'front_aperture':49.8,'front_outer_diameter':55.2,
  'case_front_z':-1.5,'front_lip_back_z':-1.3,'front_padding':0.2,
  'sphere_radius':31.9,'sphere_center_z':12.0,'shell_thickness':1.9,'face_tilt_deg':26.0,
- 'usb_slot_width':14.0,'usb_slot_height':7.0,'usb_center_depth':5.3,
+ 'usb_slot_width':14.0,'usb_slot_height':7.0,'usb_center_depth':10.3,
  'usb_corner_radius':2.0,'usb_plug_reference_width':13.4,'usb_plug_reference_height':6.4,
  'usb_plug_reference_insertion':15.0,'rim_coupon_depth':11.0,
  'speaker_width':30.0,'speaker_height':20.0,'speaker_depth':7.0,
@@ -157,6 +157,8 @@ for y in [-2,1.25,4.5,7.75,11]: carrier=cut(carrier,speaker_world(rr(25,1.6,.65,
 # Clearance slots around stationary shell bosses run through the moving cradle,
 # while the underside retains its ordinary countersunk fixing holes.
 for x,y in BASE_SCREWS: carrier=cut(carrier,cyl(2.1,50,P['base_thickness'],x,y))
+# Keep the carrier clear of the shared USB tunnel when the port sits farther back.
+carrier=cut(carrier,world(usb_cut))
 
 module=cyl(P['case_diameter']/2,P['case_depth'],P['case_front_z']-P['case_depth'])
 speaker=rr(P['speaker_width'],P['speaker_height'],3,P['speaker_back_z'],P['speaker_depth'],0,P['speaker_center_y'])
