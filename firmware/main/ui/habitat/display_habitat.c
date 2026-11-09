@@ -43,6 +43,8 @@ void cable_transport_benchmark(void);
 #define STRIP_LINES 24
 #define ATTENTION_BRIGHT_MS 15000u
 #define ATTENTION_DIM_PERCENT 12u
+#define IDLE_MS 300000u
+#define AMBIENT_DIM_PERCENT 8u
 static esp_lcd_panel_handle_t panel;
 static SemaphoreHandle_t model_lock, dma_done;
 static TaskHandle_t renderer;
@@ -56,7 +58,7 @@ static uint16_t *raster_pixels;
 #endif
 static ht_scene_t scenes[2];
 static bool painted;
-static atomic_bool asleep, force_frame;
+static atomic_bool asleep, force_frame, explicit_off, touch_wake_only;
 // Panel IO belongs to the renderer, including brightness changes.
 static atomic_uint requested_brightness = 40;
 static atomic_uint last_activity;
@@ -236,16 +238,23 @@ void display_unlock(void)
 bool display_is_asleep(void) { return atomic_load(&asleep); }
 void display_set_power_cb(void (*cb)(bool)) { power_cb = cb; }
 void display_bump_activity(void) { atomic_store(&last_activity, now_ms()); }
-void display_sleep(void)
+static void display_sleep_as(bool explicit)
 {
+    // Idle sleep must never downgrade a PWR/Nap off that won the race first.
+    if (explicit)
+        atomic_store(&explicit_off, true);
     if (atomic_exchange(&asleep, true))
         return;
     if (power_cb)
         power_cb(false);
     habitat_render_notify();
 }
+static void display_idle_sleep(void) { display_sleep_as(false); }
+void display_sleep(void) { display_sleep_as(true); }
 void display_wake(void)
 {
+    atomic_store(&explicit_off, false);
+    atomic_store(&touch_wake_only, false);
     if (!atomic_exchange(&asleep, false))
         return;
     display_bump_activity();
@@ -253,6 +262,20 @@ void display_wake(void)
     if (power_cb)
         power_cb(true);
     habitat_render_notify();
+}
+bool display_wake_from_touch(void)
+{
+    // Caller owns display_lock(), serializing this decision with the renderer's
+    // automatic-dim transition and with UI contact dispatch.
+    if (!display_is_asleep() && !atomic_load(&touch_wake_only))
+        return false;
+    atomic_store(&touch_wake_only, false);
+    display_bump_activity();
+    if (display_is_asleep())
+        display_wake();
+    else
+        habitat_render_notify();
+    return true;
 }
 void display_set_brightness(uint8_t value)
 {
@@ -405,10 +428,18 @@ static void render_task(void *arg)
 #endif
         habitat_tick();
         bool actionable = habitat_actionable_wait();
+        bool ambient = habitat_ambient_display();
+        if (ambient && display_is_asleep() && !atomic_load(&explicit_off))
+            display_wake();
         uint32_t now = now_ms();
         if (actionable && !attention) attention_since = now;
         if (!actionable && attention) display_bump_activity();
         attention = actionable;
+        uint32_t idle_ms = elapsed_since(&last_activity);
+        bool attention_dim = attention && now - attention_since >= ATTENTION_BRIGHT_MS &&
+                             idle_ms >= ATTENTION_BRIGHT_MS;
+        bool ambient_dim = !attention && ambient && idle_ms > IDLE_MS;
+        atomic_store(&touch_wake_only, attention_dim || ambient_dim);
         bool fresh = habitat_scene_take(&scenes[front ^ 1]);
         uint32_t receipt = habitat_scene_receipt();
         uint32_t wake_ms = habitat_next_wake_ms();
@@ -421,9 +452,11 @@ static void render_task(void *arg)
 #endif
         display_unlock();
         unsigned brightness = atomic_load(&requested_brightness);
-        if (attention && now - attention_since >= ATTENTION_BRIGHT_MS &&
-            brightness > ATTENTION_DIM_PERCENT)
+        if (attention_dim && brightness > ATTENTION_DIM_PERCENT) {
             brightness = ATTENTION_DIM_PERCENT;
+        } else if (ambient_dim && brightness > AMBIENT_DIM_PERCENT) {
+            brightness = AMBIENT_DIM_PERCENT;
+        }
         if (brightness != applied_brightness) {
             render_progress(RENDER_POWER);
             ESP_ERROR_CHECK(esp_lcd_panel_co5300_set_brightness(panel, brightness));
@@ -465,12 +498,13 @@ static void render_task(void *arg)
             front ^= 1;
             painted = false;
         }
-        if (on && !attention && elapsed_since(&last_activity) > 300000) {
+        if (on && !attention && !ambient && idle_ms > IDLE_MS) {
             display_lock();
             // A touch may have refreshed activity while we waited for this
-            // lock. A question may also have arrived since the first check.
-            if (!habitat_actionable_wait() && elapsed_since(&last_activity) > 300000)
-                display_sleep();
+            // lock. A question or connected ambient face may also have arrived.
+            if (!habitat_actionable_wait() && !habitat_ambient_display() &&
+                elapsed_since(&last_activity) > IDLE_MS)
+                display_idle_sleep();
             display_unlock();
         }
         render_progress(RENDER_HEALTH);

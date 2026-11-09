@@ -876,6 +876,10 @@ bool habitat_actionable_wait(void)
 {
     return s.ready && s.connected && !s.nap && waiting() > 0;
 }
+bool habitat_ambient_display(void)
+{
+    return s.ready && s.connected && !s.nap;
+}
 static int working(void)
 {
     int n = 0;
@@ -3254,7 +3258,8 @@ static void dispatch(action_t a)
         s.nap = !s.nap;
         s.nap_until = ms() + 15 * 60 * 1000;
         change();
-        if (habitat_actionable_wait()) display_wake();
+        if (s.nap) display_sleep();
+        else display_wake();
         break;
     case A_FIND:
     case A_FORM: {
@@ -4000,7 +4005,7 @@ void habitat_tick(void)
     if (s.nap && (int32_t)(now - s.nap_until) >= 0) {
         s.nap = false;
         change();
-        if (habitat_actionable_wait()) display_wake();
+        display_wake();
     }
     if (s.voice_open) {
         display_bump_activity();

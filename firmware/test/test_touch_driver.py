@@ -34,9 +34,9 @@ static struct {int touch;} b={9217};
 static const void *board_(void) { return &b; }
 #define board() ((const typeof(b)*)board_())
 typedef struct {uint32_t ms; int rc; bool down; uint16_t x,y;} sample_t;
-static sample_t *samples; static int count, at, forwarded_down, forwarded_up, canceled, woke;
-static bool asleep;
-static int power_off_at, power_on_at, sleep_on_lock, locks;
+static sample_t *samples; static int count, at, forwarded_down, forwarded_up, canceled, woke, dim_wakes;
+static bool asleep, auto_dimmed;
+static int power_off_at, power_on_at, sleep_on_lock, dim_on_lock, locks;
 static ht_gallery_t gallery;
 static jmp_buf stop;
 static int64_t esp_timer_get_time(void) { return samples[at].ms*1000ll; }
@@ -50,10 +50,15 @@ static bool esp_lcd_touch_get_coordinates(void*c,uint16_t*x,uint16_t*y,uint16_t*
 }
 static void esp_lcd_touch_del(void*c){(void)c;}
 static void esp_lcd_panel_io_del(void*c){(void)c;}
-static void display_lock(void){if(++locks==sleep_on_lock)asleep=true;}
+static void display_lock(void){locks++;if(locks==sleep_on_lock)asleep=true;if(locks==dim_on_lock)auto_dimmed=true;}
 static void display_unlock(void){}
 static bool display_is_asleep(void){return asleep;}
-static void display_wake(void){asleep=false;woke++;}
+static bool display_wake_from_touch(void){
+ if(!asleep&&!auto_dimmed)return false;
+ auto_dimmed=false;
+ if(asleep){asleep=false;woke++;}else dim_wakes++;
+ return true;
+}
 static void display_bump_activity(void){}
 static void habitat_input_stamp(int64_t n){(void)n;}
 static void habitat_touch_cancel(void){canceled++;ht_gallery_cancel(&gallery);}
@@ -61,15 +66,17 @@ static void habitat_touch(bool down,int x,int y,uint32_t n) {
  ht_gallery_touch(&gallery,down,x,y,n);if(down)forwarded_down++;else forwarded_up++;
 }
 '''+body+r'''
-static void run(sample_t *s,int n,bool sleep,int off,int on,int lock_sleep) {
- samples=s;count=n;at=forwarded_down=forwarded_up=canceled=woke=0;asleep=sleep;
- power_off_at=off;power_on_at=on;sleep_on_lock=lock_sleep;locks=0;
+static void run(sample_t *s,int n,bool sleep,bool dim,int off,int on,int lock_sleep,int lock_dim) {
+ samples=s;count=n;at=forwarded_down=forwarded_up=canceled=woke=dim_wakes=0;asleep=sleep;auto_dimmed=dim;
+ power_off_at=off;power_on_at=on;sleep_on_lock=lock_sleep;dim_on_lock=lock_dim;locks=0;
  ht_gallery_init(&gallery,s[0].ms);
  gallery.creature=0; // Exercise original reaction traces, independent of gallery boot art.
  controller=(void*)1;if(!setjmp(stop))task(NULL);
 }
-#define RUN(s,asleep_) run(s,sizeof(s)/sizeof(s[0]),asleep_,-1,-1,-1)
-#define RUN_POWER(s,off,on,lock_sleep) run(s,sizeof(s)/sizeof(s[0]),false,off,on,lock_sleep)
+#define RUN(s,asleep_) run(s,sizeof(s)/sizeof(s[0]),asleep_,false,-1,-1,-1,-1)
+#define RUN_DIM(s) run(s,sizeof(s)/sizeof(s[0]),false,true,-1,-1,-1,-1)
+#define RUN_POWER(s,off,on,lock_sleep) run(s,sizeof(s)/sizeof(s[0]),false,false,off,on,lock_sleep,-1)
+#define RUN_DIM_RACE(s,lock_dim) run(s,sizeof(s)/sizeof(s[0]),false,false,-1,-1,-1,lock_dim)
 int main(void) {
  sample_t idle_ack[]={ {0,1,0,0,0},{20,0,1,233,220},{80,0,0,233,220} };
  RUN(idle_ack,false);assert(forwarded_down==1&&forwarded_up==1&&canceled==0);
@@ -88,6 +95,12 @@ int main(void) {
                   {200,0,1,233,220},{270,0,0,233,220} };
  RUN(wake,true);assert(forwarded_down==1&&forwarded_up==1&&canceled==1&&woke==1);
  assert(gallery.booped); // First real tap after the swallowed wake tap must work.
+ RUN_DIM(wake);assert(forwarded_down==1&&forwarded_up==1&&canceled==1&&dim_wakes==1);
+ assert(gallery.booped); // Ambient-dim wake contact is swallowed; the following tap works.
+ RUN_DIM(wake);assert(forwarded_down==1&&forwarded_up==1&&canceled==1&&dim_wakes==1);
+ assert(gallery.booped); // Attention dim uses the same wake-only contact semantics.
+ RUN_DIM_RACE(wake,1);assert(forwarded_down==1&&forwarded_up==1&&canceled==1&&dim_wakes==1);
+ assert(gallery.booped); // A dim transition while waiting for the lock cannot leak the first DOWN.
  sample_t wake_swipe[]={ {0,0,1,233,220},{20,0,1,233,220},{80,0,0,233,220},
                         {200,0,1,233,220},{230,0,1,100,220},{270,0,0,100,220} };
  RUN(wake_swipe,true);assert(gallery.creature==1&&!gallery.booped);
