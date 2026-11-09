@@ -25,8 +25,8 @@ void display_lock_at(const char *who);
 #define display_lock() display_lock_at(__func__)
 void display_unlock(void);
 
-// Idle battery-save: turn the AMOLED panel off / back on. `display_wake()` repaints the current
-// screen and re-arms the idle timer. Call sites run on the LVGL task (idle check + touch wake).
+// Explicit panel off / back on. `display_wake()` repaints the current screen and re-arms the idle timer.
+// Connected faces use a dim ambient state; disconnected/Nap idle sleep remains renderer-owned.
 void display_sleep(void);
 void display_wake(void);
 bool display_is_asleep(void);

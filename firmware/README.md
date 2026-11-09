@@ -14,7 +14,7 @@ Use the explicit profile. Omitting it selects upstream shipped-dial wiring, incl
 
 ## Actionable attention
 
-Pinned Harness questions, including Super Tab ask/stuck waits, wake the AMOLED immediately and show a static amber **Needs your answer** lower arc on the Focus face. The saved brightness is used for 15 seconds; while the wait remains unresolved, the renderer caps the panel at 12% and suspends only the normal five-minute idle sleep. Resolving the final wait restores the exact saved brightness and starts a fresh five-minute idle period. Ordinary idle, busy, completed turns, and restored notification history do not activate this behavior.
+While Harness is connected and Nap is off, the AMOLED remains glanceable: after five minutes without touch input it dims to the panel's 8% minimum instead of going black. Touch restores the saved brightness. Pinned Harness questions, including Super Tab ask/stuck waits, wake the AMOLED immediately and show a static amber **Needs your answer** lower arc on the Focus face. The saved brightness is used for 15 seconds; while the wait remains unresolved, the renderer caps the panel at 12%. Resolving the final wait restores the normal connected ambient policy. Nap goes dark immediately; disconnect still sleeps after five minutes. Ambient/reconnect never overrides an explicit PWR/BOOT screen-off.
 
 Notification audio identifies the event without turning ordinary idle into an alert:
 
@@ -22,11 +22,11 @@ Notification audio identifies the event without turning ordinary idle into an al
 - a live completion with an explicit `tier:"alert"` plays a short two-note procedural cue;
 - errors and off-face Lead/PM notices retain the established three-beep attention cue.
 
-All three use one speaker worker and independent 30-second cooldowns. Playback continues to honor Mute, yields immediately to microphone capture, and drops rather than retries when the shared codec is busy. Quiet mode stops character motion but does not mute alerts. Nap suppresses wait wake/audio edges for 15 minutes; ending Nap wakes once if a pinned wait remains. No cue interrupts a question currently being read. PWR/BOOT can still turn the screen off during a wait, and the renderer will not immediately undo that explicit choice. Disconnect disables the override without deleting cached rows; reconnect card baselines and replayed question IDs update state silently instead of manufacturing new audio.
+All three use one speaker worker and independent 30-second cooldowns. Playback continues to honor Mute, yields immediately to microphone capture, and drops rather than retries when the shared codec is busy. Quiet mode stops character motion but does not mute alerts. Nap suppresses wait wake/audio edges for 15 minutes; ending Nap restores the connected ambient display. No cue interrupts a question currently being read. PWR/BOOT can still turn the screen off during a wait, and the renderer will not immediately undo that explicit choice. Disconnect disables the override without deleting cached rows; reconnect card baselines and replayed question IDs update state silently instead of manufacturing new audio.
 
 The waiting phrase is an embedded 16 kHz mono S16LE asset under `assets/audio/`; there is no runtime TTS or network dependency. Its generation and checksum are documented beside the asset. The completion cue is synthesized in fixed-size blocks, so writable audio RAM remains one 640-byte scratch buffer.
 
-The alert does not navigate or cover the question/answer UI. Its low static brightness reduces, but cannot eliminate, AMOLED burn-in risk during very long unresolved waits. Validate without flashing:
+The alert does not navigate or cover the question/answer UI. Low ambient/alert brightness and the existing companion motion reduce, but cannot eliminate, AMOLED burn-in risk during very long static displays. Validate without flashing:
 
 ```sh
 python3 firmware/test/test_display_power.py

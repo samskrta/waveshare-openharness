@@ -4,6 +4,8 @@
 bool habitat_scene_take(ht_scene_t *out);
 // Caller holds the display lock. Snapshots and ordinary idle/busy state are not actionable.
 bool habitat_actionable_wait(void);
+// Connected, non-Nap faces remain glanceable at the renderer's idle brightness.
+bool habitat_ambient_display(void);
 // Capture under the model lock after taking a scene, acknowledge only after
 // its pixels finish DMA. Zero means there is no unread card in that frame.
 uint32_t habitat_scene_receipt(void);
