@@ -135,18 +135,21 @@ static void task(void *arg)
             if (atomic_load(&presses) <= 16) ESP_LOGI("PERF", "touch raw x=%u y=%u", x, y);
 #endif
             atomic_store(&last_press, (uint32_t)(now / 1000));
-            if (display_is_asleep()) {
+            if (!swallow) {
                 display_lock();
-                habitat_touch_cancel();
-                display_wake();
+                if (display_wake_from_touch()) {
+                    habitat_touch_cancel();
+                    swallow = true;
+                } else {
+                    habitat_input_stamp(now);
+                    habitat_touch(true, x, y, (uint32_t)(now / 1000));
+                }
                 display_unlock();
-                swallow = true;
-            } else
-                habitat_input_stamp(now);
+            }
         }
         if (down)
             display_bump_activity();
-        if (!swallow && (down || prev)) {
+        if (!swallow && (down || prev) && !(down && !prev)) {
             display_lock();
             // PWR can put the screen to sleep halfway through a contact, even
             // while this task waits for the UI lock. Cancel under that same lock

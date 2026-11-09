@@ -58,7 +58,7 @@ static uint16_t *raster_pixels;
 #endif
 static ht_scene_t scenes[2];
 static bool painted;
-static atomic_bool asleep, force_frame, explicit_off;
+static atomic_bool asleep, force_frame, explicit_off, touch_wake_only;
 // Panel IO belongs to the renderer, including brightness changes.
 static atomic_uint requested_brightness = 40;
 static atomic_uint last_activity;
@@ -254,6 +254,7 @@ void display_sleep(void) { display_sleep_as(true); }
 void display_wake(void)
 {
     atomic_store(&explicit_off, false);
+    atomic_store(&touch_wake_only, false);
     if (!atomic_exchange(&asleep, false))
         return;
     display_bump_activity();
@@ -261,6 +262,20 @@ void display_wake(void)
     if (power_cb)
         power_cb(true);
     habitat_render_notify();
+}
+bool display_wake_from_touch(void)
+{
+    // Caller owns display_lock(), serializing this decision with the renderer's
+    // automatic-dim transition and with UI contact dispatch.
+    if (!display_is_asleep() && !atomic_load(&touch_wake_only))
+        return false;
+    atomic_store(&touch_wake_only, false);
+    display_bump_activity();
+    if (display_is_asleep())
+        display_wake();
+    else
+        habitat_render_notify();
+    return true;
 }
 void display_set_brightness(uint8_t value)
 {
@@ -420,6 +435,11 @@ static void render_task(void *arg)
         if (actionable && !attention) attention_since = now;
         if (!actionable && attention) display_bump_activity();
         attention = actionable;
+        uint32_t idle_ms = elapsed_since(&last_activity);
+        bool attention_dim = attention && now - attention_since >= ATTENTION_BRIGHT_MS &&
+                             idle_ms >= ATTENTION_BRIGHT_MS;
+        bool ambient_dim = !attention && ambient && idle_ms > IDLE_MS;
+        atomic_store(&touch_wake_only, attention_dim || ambient_dim);
         bool fresh = habitat_scene_take(&scenes[front ^ 1]);
         uint32_t receipt = habitat_scene_receipt();
         uint32_t wake_ms = habitat_next_wake_ms();
@@ -432,12 +452,9 @@ static void render_task(void *arg)
 #endif
         display_unlock();
         unsigned brightness = atomic_load(&requested_brightness);
-        uint32_t idle_ms = elapsed_since(&last_activity);
-        if (attention) {
-            if (now - attention_since >= ATTENTION_BRIGHT_MS &&
-                brightness > ATTENTION_DIM_PERCENT)
-                brightness = ATTENTION_DIM_PERCENT;
-        } else if (ambient && idle_ms > IDLE_MS && brightness > AMBIENT_DIM_PERCENT) {
+        if (attention_dim && brightness > ATTENTION_DIM_PERCENT) {
+            brightness = ATTENTION_DIM_PERCENT;
+        } else if (ambient_dim && brightness > AMBIENT_DIM_PERCENT) {
             brightness = AMBIENT_DIM_PERCENT;
         }
         if (brightness != applied_brightness) {

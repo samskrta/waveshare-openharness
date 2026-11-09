@@ -33,7 +33,7 @@ code = r'''
 #include <stdio.h>
 #include <string.h>
 #include <setjmp.h>
-static atomic_bool asleep, force_frame, explicit_off;
+static atomic_bool asleep, force_frame, explicit_off, touch_wake_only;
 static atomic_uint last_activity;
 static atomic_uint requested_brightness = 40;
 #define ATTENTION_BRIGHT_MS 15000u
@@ -54,6 +54,8 @@ static unsigned frames, ticks, waits, locks, sleeps, wakes, full_frames, notific
 static unsigned stop_after;
 static int mode;
 static bool actionable, ambient;
+static bool touch_result;
+static unsigned touch_calls;
 static bool panel_on = true;
 static int panel, render_guard;
 static jmp_buf finished;
@@ -77,6 +79,7 @@ static void habitat_render_notify(void) { notifications++; }
 static void display_wake(void);
 static void display_sleep(void);
 static void display_bump_activity(void);
+static bool display_wake_from_touch(void);
 static bool display_is_asleep(void) { return atomic_load(&asleep); }
 static void power(bool on) { if(on) wakes++; else sleeps++; }
 static void display_lock(void) {
@@ -117,11 +120,16 @@ static unsigned ulTaskNotifyTake(int clear, uint32_t timeout) {
     if (mode==7 && waits==1) actionable=false;
     if (mode==9 && waits==1) ambient=true;
     if (mode==10 && waits==1) ambient=true;
+    if (mode==11 && waits==1) { touch_result=display_wake_from_touch(); touch_calls++; }
+    if (mode==12 && waits==1) clock_ms+=ATTENTION_BRIGHT_MS;
+    if (mode==12 && waits==2) { touch_result=display_wake_from_touch(); touch_calls++; }
+    if (mode==12 && waits==3) clock_ms+=ATTENTION_BRIGHT_MS;
+    if (mode==13 && waits==1) { touch_result=display_wake_from_touch(); touch_calls++; }
     return 0;
 }
 '''
 for name in ['elapsed_since', 'display_bump_activity', 'display_sleep_as', 'display_idle_sleep',
-             'display_sleep', 'display_wake', 'render_task']:
+             'display_sleep', 'display_wake', 'display_wake_from_touch', 'render_task']:
     code += function(name)
 code += r'''
 static void run(int which, uint32_t now, uint32_t activity, bool sleep, bool wait, bool ambient_on,
@@ -129,8 +137,10 @@ static void run(int which, uint32_t now, uint32_t activity, bool sleep, bool wai
     mode=which; clock_ms=now; atomic_store(&last_activity,activity);
     actionable=wait; ambient=ambient_on; atomic_store(&requested_brightness,brightness);
     atomic_store(&asleep,sleep); atomic_store(&force_frame,false); atomic_store(&explicit_off,sleep);
+    atomic_store(&touch_wake_only,false);
     memset(scenes,0,sizeof scenes); painted=mode!=4; panel_on=true; receipts=0; power_cb=power;
     frames=ticks=waits=locks=sleeps=wakes=full_frames=notifications=brightness_calls=0;
+    touch_result=false; touch_calls=0;
     stop_after=loops;
     if (!setjmp(finished)) render_task(NULL);
     assert(waits==loops);
@@ -155,7 +165,16 @@ int main(void) {
     run(0,299900,UINT32_MAX-100,false,false,false,40,1); assert(display_is_asleep() && sleeps==1);
     // A connected face stays on at the existing panel minimum. Auto-sleep during a disconnect/Nap
     // wakes on return, but an explicit PWR/BOOT off remains dark.
-    run(0,300001,0,false,false,true,40,1); assert(!display_is_asleep() && !sleeps && brightness_seen[0]==8);
+    run(0,300000,0,false,false,true,40,1); assert(!atomic_load(&touch_wake_only));
+    run(0,300001,0,false,false,true,40,1);
+    assert(!display_is_asleep() && !sleeps && brightness_seen[0]==8 && atomic_load(&touch_wake_only));
+    run(0,300001,0,false,false,true,8,1);
+    assert(brightness_seen[0]==8 && atomic_load(&touch_wake_only));
+    // A wake-only ambient touch refreshes activity and immediately restores the saved request.
+    run(11,300001,0,false,false,true,40,2);
+    assert(touch_result && touch_calls==1 && notifications==1);
+    assert(atomic_load(&last_activity)==clock_ms && atomic_load(&requested_brightness)==40);
+    assert(brightness_calls==2 && brightness_seen[0]==8 && brightness_seen[1]==40);
     run(9,300001,0,false,false,false,40,2); assert(!display_is_asleep() && sleeps==1 && wakes==1);
     run(0,1000,1000,true,false,true,40,1); assert(display_is_asleep() && !wakes);
     run(10,300001,0,false,false,false,40,2);
@@ -165,11 +184,24 @@ int main(void) {
     run(0,300001,0,false,true,true,40,1); assert(!display_is_asleep() && !sleeps && brightness_seen[0]==40);
     run(6,1000,1000,false,true,true,40,2); assert(brightness_calls==2 && brightness_seen[0]==40 && brightness_seen[1]==12);
     run(6,1000,1000,false,true,true,8,2); assert(brightness_calls==1 && brightness_seen[0]==8);
+    // The same wake-only touch gives an unresolved wait a fresh 15-second bright interval.
+    run(12,1000,1000,false,true,true,40,4);
+    assert(touch_result && touch_calls==1 && notifications==1);
+    assert(brightness_calls==4 && brightness_seen[0]==40 && brightness_seen[1]==12 &&
+           brightness_seen[2]==40 && brightness_seen[3]==12);
+    assert(atomic_load(&requested_brightness)==40 && atomic_load(&touch_wake_only));
     run(7,300001,0,false,true,true,40,2); assert(!display_is_asleep() && atomic_load(&last_activity)==clock_ms);
     // Renderer attention never overrides an explicit screen-off; only a real event edge wakes it.
     run(0,1000,1000,true,true,true,40,1); assert(display_is_asleep() && !wakes);
     // Arrival while the renderer is taking the sleep lock wins the second predicate check.
     run(8,300001,0,false,false,false,40,1); assert(!display_is_asleep() && !sleeps);
+    // Awake bright touches are ordinary; off touches wake through the normal callback/repaint path.
+    uint32_t activity_before=atomic_load(&last_activity);
+    unsigned notify_before=notifications;
+    assert(!display_wake_from_touch() && atomic_load(&last_activity)==activity_before &&
+           notifications==notify_before);
+    run(13,1000,1000,true,false,false,40,2);
+    assert(touch_result && touch_calls==1 && !display_is_asleep() && wakes==1 && frames==1);
     // Repeated requests are idempotent; no extra callbacks/notifications.
     display_sleep();
     unsigned n=notifications, s=sleeps, w=wakes;

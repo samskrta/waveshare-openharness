@@ -1,6 +1,6 @@
 diff --git a/devices/harness-device/firmware/assets/audio/README.md b/devices/harness-device/firmware/assets/audio/README.md
 new file mode 100644
-index 0000000000..6d3375eb1c
+index 00000000..6d3375eb
 --- /dev/null
 +++ b/devices/harness-device/firmware/assets/audio/README.md
 @@ -0,0 +1,9 @@
@@ -549,7 +549,7 @@ literal 0
 HcmV?d00001
 
 diff --git a/devices/harness-device/firmware/main/CMakeLists.txt b/devices/harness-device/firmware/main/CMakeLists.txt
-index 04e65612fa..3cd943bd09 100644
+index 04e65612..3cd943bd 100644
 --- a/devices/harness-device/firmware/main/CMakeLists.txt
 +++ b/devices/harness-device/firmware/main/CMakeLists.txt
 @@ -113,7 +113,7 @@ idf_component_register(
@@ -581,7 +581,7 @@ index 04e65612fa..3cd943bd09 100644
 +    message(FATAL_ERROR "DEVICE_BOARD must be dial or waveshare-standard")
 +endif()
 diff --git a/devices/harness-device/firmware/main/app_main.c b/devices/harness-device/firmware/main/app_main.c
-index 18148687bc..2ccb722040 100644
+index 18148687..2ccb7220 100644
 --- a/devices/harness-device/firmware/main/app_main.c
 +++ b/devices/harness-device/firmware/main/app_main.c
 @@ -24,6 +24,7 @@
@@ -603,7 +603,7 @@ index 18148687bc..2ccb722040 100644
  
      if (boot_button_held()) {
 diff --git a/devices/harness-device/firmware/main/audio_capture.c b/devices/harness-device/firmware/main/audio_capture.c
-index 2418d0657f..05e1e420b7 100644
+index 2418d065..05e1e420 100644
 --- a/devices/harness-device/firmware/main/audio_capture.c
 +++ b/devices/harness-device/firmware/main/audio_capture.c
 @@ -33,7 +33,7 @@ static bool rx_overrun(i2s_chan_handle_t channel,i2s_event_data_t *event,void *c
@@ -779,7 +779,7 @@ index 2418d0657f..05e1e420b7 100644
  
  static bool capture_init_failed(const char *why)
 diff --git a/devices/harness-device/firmware/main/audio_capture.h b/devices/harness-device/firmware/main/audio_capture.h
-index 4fa9182e8b..82ca1c32ff 100644
+index 4fa9182e..82ca1c32 100644
 --- a/devices/harness-device/firmware/main/audio_capture.h
 +++ b/devices/harness-device/firmware/main/audio_capture.h
 @@ -13,7 +13,7 @@
@@ -819,7 +819,7 @@ index 4fa9182e8b..82ca1c32ff 100644
  // Applies immediately, including queued notifications, and persists to NVS.
  bool audio_notify_set_muted(bool muted);
 diff --git a/devices/harness-device/firmware/main/board/board.c b/devices/harness-device/firmware/main/board/board.c
-index 74878f12bd..9c77521b2e 100644
+index 74878f12..9c77521b 100644
 --- a/devices/harness-device/firmware/main/board/board.c
 +++ b/devices/harness-device/firmware/main/board/board.c
 @@ -14,7 +14,12 @@ static const char *TAG = "board";
@@ -861,7 +861,7 @@ index 74878f12bd..9c77521b2e 100644
      for (int i = 0; i < n; i++) p += snprintf(list + p, sizeof list - p, "%s%02X", i ? "," : "", acks[i]);
      ESP_LOGI(TAG, "%s (ack %s)", board_describe(), n ? list : "none");
 diff --git a/devices/harness-device/firmware/main/board/pins_dial.h b/devices/harness-device/firmware/main/board/pins_dial.h
-index 0978914b93..746850ab07 100644
+index 0978914b..746850ab 100644
 --- a/devices/harness-device/firmware/main/board/pins_dial.h
 +++ b/devices/harness-device/firmware/main/board/pins_dial.h
 @@ -33,7 +33,11 @@
@@ -878,7 +878,7 @@ index 0978914b93..746850ab07 100644
  #define BSP_I2S_WS           45
  #define BSP_I2S_DOUT         8            // codec → ESP (mic data in to ESP)
 diff --git a/devices/harness-device/firmware/main/board/power.c b/devices/harness-device/firmware/main/board/power.c
-index 8993b527d4..ca44da8f9a 100644
+index 8993b527..ca44da8f 100644
 --- a/devices/harness-device/firmware/main/board/power.c
 +++ b/devices/harness-device/firmware/main/board/power.c
 @@ -8,6 +8,18 @@
@@ -971,7 +971,7 @@ index 8993b527d4..ca44da8f9a 100644
  
  int power_battery_pct(void)
 diff --git a/devices/harness-device/firmware/main/cable_client.c b/devices/harness-device/firmware/main/cable_client.c
-index 41ebd2235e..57860e7a57 100644
+index 41ebd223..57860e7a 100644
 --- a/devices/harness-device/firmware/main/cable_client.c
 +++ b/devices/harness-device/firmware/main/cable_client.c
 @@ -13,7 +13,7 @@
@@ -1084,7 +1084,7 @@ index 41ebd2235e..57860e7a57 100644
      }
      if (strcmp(t,"question.state")==0) { ui_question_state(p); return; }
 diff --git a/devices/harness-device/firmware/main/config_store.c b/devices/harness-device/firmware/main/config_store.c
-index 14cea83127..9e8bdc3ee0 100644
+index 14cea831..9e8bdc3e 100644
 --- a/devices/harness-device/firmware/main/config_store.c
 +++ b/devices/harness-device/firmware/main/config_store.c
 @@ -69,6 +69,27 @@ void config_save_brightness(uint8_t level)
@@ -1116,7 +1116,7 @@ index 14cea83127..9e8bdc3ee0 100644
  {
      nvs_handle_t h;
 diff --git a/devices/harness-device/firmware/main/config_store.h b/devices/harness-device/firmware/main/config_store.h
-index a23e1aa674..4c29884173 100644
+index a23e1aa6..4c298841 100644
 --- a/devices/harness-device/firmware/main/config_store.h
 +++ b/devices/harness-device/firmware/main/config_store.h
 @@ -20,6 +20,11 @@ void config_store_init(void);
@@ -1132,7 +1132,7 @@ index a23e1aa674..4c29884173 100644
  bool config_load_muted(void);
  bool config_save_muted(bool muted);
 diff --git a/devices/harness-device/firmware/main/ui/display.h b/devices/harness-device/firmware/main/ui/display.h
-index 983a2914db..4f646fe190 100644
+index 983a2914..15889d4f 100644
 --- a/devices/harness-device/firmware/main/ui/display.h
 +++ b/devices/harness-device/firmware/main/ui/display.h
 @@ -14,6 +14,9 @@ void display_init_ota(void);
@@ -1145,7 +1145,7 @@ index 983a2914db..4f646fe190 100644
  // Lock/unlock the LVGL mutex. ANY code that touches LVGL objects from outside
  // the LVGL task (e.g. the WiFi/WS tasks via ui_screens.c) must hold this.
  // `display_lock()` carries the caller's name so a wait past 2s can be logged with who is waiting and
-@@ -22,8 +25,8 @@ void display_lock_at(const char *who);
+@@ -22,11 +25,14 @@ void display_lock_at(const char *who);
  #define display_lock() display_lock_at(__func__)
  void display_unlock(void);
  
@@ -1156,8 +1156,14 @@ index 983a2914db..4f646fe190 100644
  void display_sleep(void);
  void display_wake(void);
  bool display_is_asleep(void);
++// Caller holds display_lock(). True means the panel was off or automatically dimmed and the touch
++// driver must consume this entire physical contact after restoring the normal bright interval.
++bool display_wake_from_touch(void);
+ // Register a power hook: cb(false) fires on sleep, cb(true) on wake. Used by the UI screen-lock to arm
+ // re-lock on sleep and show the unlock overlay on wake. Runs under display_lock (recursive).
+ void display_set_power_cb(void (*cb)(bool on));
 diff --git a/devices/harness-device/firmware/main/ui/habitat/display_habitat.c b/devices/harness-device/firmware/main/ui/habitat/display_habitat.c
-index b6e62b2268..be82a30bdf 100644
+index b6e62b22..bd2c6b42 100644
 --- a/devices/harness-device/firmware/main/ui/habitat/display_habitat.c
 +++ b/devices/harness-device/firmware/main/ui/habitat/display_habitat.c
 @@ -1,6 +1,8 @@
@@ -1191,11 +1197,11 @@ index b6e62b2268..be82a30bdf 100644
  static ht_scene_t scenes[2];
  static bool painted;
 -static atomic_bool asleep, force_frame;
-+static atomic_bool asleep, force_frame, explicit_off;
++static atomic_bool asleep, force_frame, explicit_off, touch_wake_only;
  // Panel IO belongs to the renderer, including brightness changes.
  static atomic_uint requested_brightness = 40;
  static atomic_uint last_activity;
-@@ -225,16 +238,22 @@ void display_unlock(void)
+@@ -225,16 +238,23 @@ void display_unlock(void)
  bool display_is_asleep(void) { return atomic_load(&asleep); }
  void display_set_power_cb(void (*cb)(bool)) { power_cb = cb; }
  void display_bump_activity(void) { atomic_store(&last_activity, now_ms()); }
@@ -1216,10 +1222,32 @@ index b6e62b2268..be82a30bdf 100644
  void display_wake(void)
  {
 +    atomic_store(&explicit_off, false);
++    atomic_store(&touch_wake_only, false);
      if (!atomic_exchange(&asleep, false))
          return;
      display_bump_activity();
-@@ -275,10 +294,19 @@ static uint32_t paint(const ht_scene_t *next, const ht_damage_t *damage)
+@@ -243,6 +263,20 @@ void display_wake(void)
+         power_cb(true);
+     habitat_render_notify();
+ }
++bool display_wake_from_touch(void)
++{
++    // Caller owns display_lock(), serializing this decision with the renderer's
++    // automatic-dim transition and with UI contact dispatch.
++    if (!display_is_asleep() && !atomic_load(&touch_wake_only))
++        return false;
++    atomic_store(&touch_wake_only, false);
++    display_bump_activity();
++    if (display_is_asleep())
++        display_wake();
++    else
++        habitat_render_notify();
++    return true;
++}
+ void display_set_brightness(uint8_t value)
+ {
+     unsigned percent = ((unsigned)value * 100 + 127) / 255;
+@@ -275,10 +309,19 @@ static uint32_t paint(const ht_scene_t *next, const ht_damage_t *damage)
              ht_rect_t strip = {rect.x, y, rect.w, h};
              int64_t t = esp_timer_get_time();
              render_progress(RENDER_RASTER);
@@ -1241,7 +1269,7 @@ index b6e62b2268..be82a30bdf 100644
  #endif
              raster_us += (uint32_t)(esp_timer_get_time() - t);
              // CPU prepares B while DMA owns A. Neither buffer is reused before the ISR fence.
-@@ -286,7 +314,8 @@ static uint32_t paint(const ht_scene_t *next, const ht_damage_t *damage)
+@@ -286,7 +329,8 @@ static uint32_t paint(const ht_scene_t *next, const ht_damage_t *damage)
                  wait_dma();
              ui_perf_flush((size_t)rect.w * h * 2);
              render_progress(RENDER_SUBMIT);
@@ -1251,7 +1279,7 @@ index b6e62b2268..be82a30bdf 100644
                                                        pixels[buffer]));
              pending = true;
              buffer ^= 1;
-@@ -366,6 +395,8 @@ static void render_task(void *arg)
+@@ -366,6 +410,8 @@ static void render_task(void *arg)
      ESP_ERROR_CHECK(esp_timer_start_periodic(render_guard, 1000000));
      int front = 0;
      bool panel_on = true;
@@ -1260,7 +1288,7 @@ index b6e62b2268..be82a30bdf 100644
      unsigned applied_brightness = 101;
      for (;;) {
          ESP_ERROR_CHECK(esp_task_wdt_reset());
-@@ -381,6 +412,14 @@ static void render_task(void *arg)
+@@ -381,6 +427,19 @@ static void render_task(void *arg)
          int64_t model_started = esp_timer_get_time();
  #endif
          habitat_tick();
@@ -1272,25 +1300,27 @@ index b6e62b2268..be82a30bdf 100644
 +        if (actionable && !attention) attention_since = now;
 +        if (!actionable && attention) display_bump_activity();
 +        attention = actionable;
++        uint32_t idle_ms = elapsed_since(&last_activity);
++        bool attention_dim = attention && now - attention_since >= ATTENTION_BRIGHT_MS &&
++                             idle_ms >= ATTENTION_BRIGHT_MS;
++        bool ambient_dim = !attention && ambient && idle_ms > IDLE_MS;
++        atomic_store(&touch_wake_only, attention_dim || ambient_dim);
          bool fresh = habitat_scene_take(&scenes[front ^ 1]);
          uint32_t receipt = habitat_scene_receipt();
          uint32_t wake_ms = habitat_next_wake_ms();
-@@ -393,6 +432,14 @@ static void render_task(void *arg)
+@@ -393,6 +452,11 @@ static void render_task(void *arg)
  #endif
          display_unlock();
          unsigned brightness = atomic_load(&requested_brightness);
-+        uint32_t idle_ms = elapsed_since(&last_activity);
-+        if (attention) {
-+            if (now - attention_since >= ATTENTION_BRIGHT_MS &&
-+                brightness > ATTENTION_DIM_PERCENT)
-+                brightness = ATTENTION_DIM_PERCENT;
-+        } else if (ambient && idle_ms > IDLE_MS && brightness > AMBIENT_DIM_PERCENT) {
++        if (attention_dim && brightness > ATTENTION_DIM_PERCENT) {
++            brightness = ATTENTION_DIM_PERCENT;
++        } else if (ambient_dim && brightness > AMBIENT_DIM_PERCENT) {
 +            brightness = AMBIENT_DIM_PERCENT;
 +        }
          if (brightness != applied_brightness) {
              render_progress(RENDER_POWER);
              ESP_ERROR_CHECK(esp_lcd_panel_co5300_set_brightness(panel, brightness));
-@@ -434,12 +481,13 @@ static void render_task(void *arg)
+@@ -434,12 +498,13 @@ static void render_task(void *arg)
              front ^= 1;
              painted = false;
          }
@@ -1308,7 +1338,7 @@ index b6e62b2268..be82a30bdf 100644
              display_unlock();
          }
          render_progress(RENDER_HEALTH);
-@@ -476,6 +524,21 @@ void display_init(void)
+@@ -476,6 +541,21 @@ void display_init(void)
      ESP_ERROR_CHECK(esp_lcd_panel_reset(panel));
      ESP_ERROR_CHECK(esp_lcd_panel_init(panel));
      ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel, true));
@@ -1331,7 +1361,7 @@ index b6e62b2268..be82a30bdf 100644
          pixels[i] =
              heap_caps_malloc(HT_WIDTH * STRIP_LINES * 2, MALLOC_CAP_INTERNAL | MALLOC_CAP_DMA);
 diff --git a/devices/harness-device/firmware/main/ui/habitat/focus.c b/devices/harness-device/firmware/main/ui/habitat/focus.c
-index 956269886c..02a39e6f37 100644
+index 95626988..02a39e6f 100644
 --- a/devices/harness-device/firmware/main/ui/habitat/focus.c
 +++ b/devices/harness-device/firmware/main/ui/habitat/focus.c
 @@ -62,6 +62,7 @@ enum { MARK_SIZE = 56, TITLE_BOTTOM = HT_ARC_Y + HT_ARC_CELL_HEIGHT, COL_X = 41,
@@ -1355,7 +1385,7 @@ index 956269886c..02a39e6f37 100644
          ht_arc_status_face(s, ht_rgb(FOCUS_VOICE), arc, &ht_arc_inter_lower);
 diff --git a/devices/harness-device/firmware/main/ui/habitat/orientation.h b/devices/harness-device/firmware/main/ui/habitat/orientation.h
 new file mode 100644
-index 0000000000..80419e790a
+index 00000000..80419e79
 --- /dev/null
 +++ b/devices/harness-device/firmware/main/ui/habitat/orientation.h
 @@ -0,0 +1,31 @@
@@ -1391,7 +1421,7 @@ index 0000000000..80419e790a
 +    if (turns == 3) { *x = native_y; *y = HT_HEIGHT - 1 - native_x; }
 +}
 diff --git a/devices/harness-device/firmware/main/ui/habitat/runtime.h b/devices/harness-device/firmware/main/ui/habitat/runtime.h
-index 4b4f44f4e6..974130dc75 100644
+index 4b4f44f4..974130dc 100644
 --- a/devices/harness-device/firmware/main/ui/habitat/runtime.h
 +++ b/devices/harness-device/firmware/main/ui/habitat/runtime.h
 @@ -2,6 +2,10 @@
@@ -1406,7 +1436,7 @@ index 4b4f44f4e6..974130dc75 100644
  // its pixels finish DMA. Zero means there is no unread card in that frame.
  uint32_t habitat_scene_receipt(void);
 diff --git a/devices/harness-device/firmware/main/ui/habitat/supertab.c b/devices/harness-device/firmware/main/ui/habitat/supertab.c
-index b3bb577e76..dca92b4af8 100644
+index b3bb577e..dca92b4a 100644
 --- a/devices/harness-device/firmware/main/ui/habitat/supertab.c
 +++ b/devices/harness-device/firmware/main/ui/habitat/supertab.c
 @@ -169,7 +169,9 @@ int ht_supertabs_put(ht_supertabs_t *s, const ht_supertab_t *in, uint32_t now_ms
@@ -1421,7 +1451,7 @@ index b3bb577e76..dca92b4af8 100644
          else if (!asking(now) && was && asking(was->state))
              events = emit(ev, ev_max, events, HT_LEAD_CLEARED, in->id, in->leads[i].id);
 diff --git a/devices/harness-device/firmware/main/ui/habitat/touch_habitat.c b/devices/harness-device/firmware/main/ui/habitat/touch_habitat.c
-index d14ec0f1ad..5a103115ff 100644
+index d14ec0f1..74d7fe42 100644
 --- a/devices/harness-device/firmware/main/ui/habitat/touch_habitat.c
 +++ b/devices/harness-device/firmware/main/ui/habitat/touch_habitat.c
 @@ -1,4 +1,5 @@
@@ -1440,8 +1470,37 @@ index d14ec0f1ad..5a103115ff 100644
                  last_good = now;
                  last_x = x;
                  last_y = y;
+@@ -131,18 +135,21 @@ static void task(void *arg)
+             if (atomic_load(&presses) <= 16) ESP_LOGI("PERF", "touch raw x=%u y=%u", x, y);
+ #endif
+             atomic_store(&last_press, (uint32_t)(now / 1000));
+-            if (display_is_asleep()) {
++            if (!swallow) {
+                 display_lock();
+-                habitat_touch_cancel();
+-                display_wake();
++                if (display_wake_from_touch()) {
++                    habitat_touch_cancel();
++                    swallow = true;
++                } else {
++                    habitat_input_stamp(now);
++                    habitat_touch(true, x, y, (uint32_t)(now / 1000));
++                }
+                 display_unlock();
+-                swallow = true;
+-            } else
+-                habitat_input_stamp(now);
++            }
+         }
+         if (down)
+             display_bump_activity();
+-        if (!swallow && (down || prev)) {
++        if (!swallow && (down || prev) && !(down && !prev)) {
+             display_lock();
+             // PWR can put the screen to sleep halfway through a contact, even
+             // while this task waits for the UI lock. Cancel under that same lock
 diff --git a/devices/harness-device/firmware/main/ui/habitat/ui_habitat.c b/devices/harness-device/firmware/main/ui/habitat/ui_habitat.c
-index 4a902154ad..6588c8af4b 100644
+index 4a902154..6588c8af 100644
 --- a/devices/harness-device/firmware/main/ui/habitat/ui_habitat.c
 +++ b/devices/harness-device/firmware/main/ui/habitat/ui_habitat.c
 @@ -25,6 +25,10 @@ static ht_gallery_t gallery;
@@ -1709,7 +1768,7 @@ index 4a902154ad..6588c8af4b 100644
  // The desktop opened that chat: its message entry is read there, and goes from the dial.
  void ui_supertab_notice_read(const char *tab, const char *lead, const char *chat_id)
 diff --git a/devices/harness-device/firmware/main/ui/ui_screens.h b/devices/harness-device/firmware/main/ui/ui_screens.h
-index df0e3080ab..ed0ba7c0e2 100644
+index df0e3080..ed0ba7c0 100644
 --- a/devices/harness-device/firmware/main/ui/ui_screens.h
 +++ b/devices/harness-device/firmware/main/ui/ui_screens.h
 @@ -256,18 +256,19 @@ void ui_swarms_replace(const cable_swarm_t *rows, int count, const char *selecte
@@ -1762,7 +1821,7 @@ index df0e3080ab..ed0ba7c0e2 100644
  // That question was answered somewhere else (the app, or the pane by hand) — leave the screen instead of
  // waiting for an answer that can no longer be delivered. No-op unless THIS request is the one on screen.
 diff --git a/devices/harness-device/firmware/test/bridge_flow_replay.py b/devices/harness-device/firmware/test/bridge_flow_replay.py
-index 87dfe279ce..6fa2aad6db 100644
+index 87dfe279..6fa2aad6 100644
 --- a/devices/harness-device/firmware/test/bridge_flow_replay.py
 +++ b/devices/harness-device/firmware/test/bridge_flow_replay.py
 @@ -34,7 +34,8 @@ static int64_t s_last_rx_us;
@@ -1776,7 +1835,7 @@ index 87dfe279ce..6fa2aad6db 100644
      extra += function('str_of') + function('bool_of')
      extra += prefix + identity + events + '    assert(!"Unexpected message in turn/result replay");\n}\n'
 diff --git a/devices/harness-device/firmware/test/run.sh b/devices/harness-device/firmware/test/run.sh
-index fd57c2f4b8..75dd9d9f7b 100644
+index fd57c2f4..75dd9d9f 100644
 --- a/devices/harness-device/firmware/test/run.sh
 +++ b/devices/harness-device/firmware/test/run.sh
 @@ -19,6 +19,11 @@ python3 "$here/../scripts/gen_tux_moods.py" --check
@@ -1800,7 +1859,7 @@ index fd57c2f4b8..75dd9d9f7b 100644
  python3 "$here/test_audio_stream.py"
  python3 "$here/test_audio_threads.py"
 diff --git a/devices/harness-device/firmware/test/test_audio_notify.py b/devices/harness-device/firmware/test/test_audio_notify.py
-index c074c2cb80..c542de0534 100644
+index c074c2cb..c542de05 100644
 --- a/devices/harness-device/firmware/test/test_audio_notify.py
 +++ b/devices/harness-device/firmware/test/test_audio_notify.py
 @@ -1,4 +1,5 @@
@@ -1979,7 +2038,7 @@ index c074c2cb80..c542de0534 100644
 +    subprocess.run([str(out/'notify'),str(asset)],check=True)
 diff --git a/devices/harness-device/firmware/test/test_audio_routing.py b/devices/harness-device/firmware/test/test_audio_routing.py
 new file mode 100644
-index 0000000000..7d85338f98
+index 00000000..7d85338f
 --- /dev/null
 +++ b/devices/harness-device/firmware/test/test_audio_routing.py
 @@ -0,0 +1,38 @@
@@ -2022,7 +2081,7 @@ index 0000000000..7d85338f98
 +assert '!question_view(s.view)' in function(ui, 'ui_supertab_notice')
 +print('Cable audio routing: waiting/attention/exact-live-alert completion and reading guards PASS')
 diff --git a/devices/harness-device/firmware/test/test_cable_supertab.py b/devices/harness-device/firmware/test/test_cable_supertab.py
-index e2d6e13e14..9cb734b155 100644
+index e2d6e13e..9cb734b1 100644
 --- a/devices/harness-device/firmware/test/test_cable_supertab.py
 +++ b/devices/harness-device/firmware/test/test_cable_supertab.py
 @@ -51,9 +51,14 @@ static bool device_mac_str(char *o,size_t n) { snprintf(o,n,"aa:bb");return true
@@ -2080,7 +2139,7 @@ index e2d6e13e14..9cb734b155 100644
      feed_agent(handle_question,"{\"id\":\"supertab:a3\",\"superTab\":\"openharness\"}");
      assert(wait_calls==2);   // no agent: nothing to attach it to
 diff --git a/devices/harness-device/firmware/test/test_character.c b/devices/harness-device/firmware/test/test_character.c
-index 4267ddeca7..dd24457dd2 100644
+index 4267ddec..dd24457d 100644
 --- a/devices/harness-device/firmware/test/test_character.c
 +++ b/devices/harness-device/firmware/test/test_character.c
 @@ -816,7 +816,10 @@ static void focus_face(void)
@@ -2120,7 +2179,7 @@ index 4267ddeca7..dd24457dd2 100644
          ht_scene_clear(&sc, 0); ht_character_face(&sc, &c, &t, 0xffff, "");
          assert(sc.count == 11 && !sc.runs[10].arc && sc.runs[7].text[0]);
 diff --git a/devices/harness-device/firmware/test/test_display_power.py b/devices/harness-device/firmware/test/test_display_power.py
-index 358a843e20..f087ad58cd 100644
+index 358a843e..fa89fadf 100644
 --- a/devices/harness-device/firmware/test/test_display_power.py
 +++ b/devices/harness-device/firmware/test/test_display_power.py
 @@ -8,6 +8,12 @@ import tempfile
@@ -2141,7 +2200,7 @@ index 358a843e20..f087ad58cd 100644
  #include <string.h>
  #include <setjmp.h>
 -static atomic_bool asleep, force_frame;
-+static atomic_bool asleep, force_frame, explicit_off;
++static atomic_bool asleep, force_frame, explicit_off, touch_wake_only;
  static atomic_uint last_activity;
  static atomic_uint requested_brightness = 40;
 +#define ATTENTION_BRIGHT_MS 15000u
@@ -2157,15 +2216,24 @@ index 358a843e20..f087ad58cd 100644
  static void ht_illustrated_prepare(ht_scene_t *scene) { (void)scene; }
  static ht_scene_t scenes[2];
  static bool painted;
-@@ -40,6 +53,7 @@ static uint32_t clock_ms;
+@@ -40,6 +53,9 @@ static uint32_t clock_ms;
  static unsigned frames, ticks, waits, locks, sleeps, wakes, full_frames, notifications;
  static unsigned stop_after;
  static int mode;
 +static bool actionable, ambient;
++static bool touch_result;
++static unsigned touch_calls;
  static bool panel_on = true;
  static int panel, render_guard;
  static jmp_buf finished;
-@@ -69,9 +83,13 @@ static void display_lock(void) {
+@@ -63,15 +79,20 @@ static void habitat_render_notify(void) { notifications++; }
+ static void display_wake(void);
+ static void display_sleep(void);
+ static void display_bump_activity(void);
++static bool display_wake_from_touch(void);
+ static bool display_is_asleep(void) { return atomic_load(&asleep); }
+ static void power(bool on) { if(on) wakes++; else sleeps++; }
+ static void display_lock(void) {
      locks++;
      // Touch wins the model lock while the renderer is waiting to auto-sleep.
      if (mode==2 && locks==2) display_bump_activity();
@@ -2179,7 +2247,7 @@ index 358a843e20..f087ad58cd 100644
  static bool habitat_scene_take(ht_scene_t *out) { (void)out; return mode==4 || mode==5; }
  static unsigned receipts;
  static uint32_t habitat_scene_receipt(void) { return mode==4 || mode==5 ? 77 : 0; }
-@@ -95,44 +113,69 @@ static unsigned ulTaskNotifyTake(int clear, uint32_t timeout) {
+@@ -95,44 +116,98 @@ static unsigned ulTaskNotifyTake(int clear, uint32_t timeout) {
      if (++waits==stop_after) longjmp(finished,1);
      // Normal idle wake follows a quiet/asleep iteration, with no fresh model.
      if (mode==3 && waits==1) display_wake();
@@ -2187,12 +2255,17 @@ index 358a843e20..f087ad58cd 100644
 +    if (mode==7 && waits==1) actionable=false;
 +    if (mode==9 && waits==1) ambient=true;
 +    if (mode==10 && waits==1) ambient=true;
++    if (mode==11 && waits==1) { touch_result=display_wake_from_touch(); touch_calls++; }
++    if (mode==12 && waits==1) clock_ms+=ATTENTION_BRIGHT_MS;
++    if (mode==12 && waits==2) { touch_result=display_wake_from_touch(); touch_calls++; }
++    if (mode==12 && waits==3) clock_ms+=ATTENTION_BRIGHT_MS;
++    if (mode==13 && waits==1) { touch_result=display_wake_from_touch(); touch_calls++; }
      return 0;
  }
  '''
 -for name in ['elapsed_since', 'display_bump_activity', 'display_sleep', 'display_wake', 'render_task']:
 +for name in ['elapsed_since', 'display_bump_activity', 'display_sleep_as', 'display_idle_sleep',
-+             'display_sleep', 'display_wake', 'render_task']:
++             'display_sleep', 'display_wake', 'display_wake_from_touch', 'render_task']:
      code += function(name)
  code += r'''
 -static void run(int which, uint32_t now, uint32_t activity, bool sleep, unsigned loops) {
@@ -2202,9 +2275,11 @@ index 358a843e20..f087ad58cd 100644
 -    atomic_store(&asleep,sleep); atomic_store(&force_frame,false);
 +    actionable=wait; ambient=ambient_on; atomic_store(&requested_brightness,brightness);
 +    atomic_store(&asleep,sleep); atomic_store(&force_frame,false); atomic_store(&explicit_off,sleep);
++    atomic_store(&touch_wake_only,false);
      memset(scenes,0,sizeof scenes); painted=mode!=4; panel_on=true; receipts=0; power_cb=power;
 -    frames=ticks=waits=locks=sleeps=wakes=full_frames=notifications=0;
 +    frames=ticks=waits=locks=sleeps=wakes=full_frames=notifications=brightness_calls=0;
++    touch_result=false; touch_calls=0;
      stop_after=loops;
      if (!setjmp(finished)) render_task(NULL);
      assert(waits==loops);
@@ -2238,7 +2313,16 @@ index 358a843e20..f087ad58cd 100644
 +    run(0,299900,UINT32_MAX-100,false,false,false,40,1); assert(display_is_asleep() && sleeps==1);
 +    // A connected face stays on at the existing panel minimum. Auto-sleep during a disconnect/Nap
 +    // wakes on return, but an explicit PWR/BOOT off remains dark.
-+    run(0,300001,0,false,false,true,40,1); assert(!display_is_asleep() && !sleeps && brightness_seen[0]==8);
++    run(0,300000,0,false,false,true,40,1); assert(!atomic_load(&touch_wake_only));
++    run(0,300001,0,false,false,true,40,1);
++    assert(!display_is_asleep() && !sleeps && brightness_seen[0]==8 && atomic_load(&touch_wake_only));
++    run(0,300001,0,false,false,true,8,1);
++    assert(brightness_seen[0]==8 && atomic_load(&touch_wake_only));
++    // A wake-only ambient touch refreshes activity and immediately restores the saved request.
++    run(11,300001,0,false,false,true,40,2);
++    assert(touch_result && touch_calls==1 && notifications==1);
++    assert(atomic_load(&last_activity)==clock_ms && atomic_load(&requested_brightness)==40);
++    assert(brightness_calls==2 && brightness_seen[0]==8 && brightness_seen[1]==40);
 +    run(9,300001,0,false,false,false,40,2); assert(!display_is_asleep() && sleeps==1 && wakes==1);
 +    run(0,1000,1000,true,false,true,40,1); assert(display_is_asleep() && !wakes);
 +    run(10,300001,0,false,false,false,40,2);
@@ -2248,11 +2332,24 @@ index 358a843e20..f087ad58cd 100644
 +    run(0,300001,0,false,true,true,40,1); assert(!display_is_asleep() && !sleeps && brightness_seen[0]==40);
 +    run(6,1000,1000,false,true,true,40,2); assert(brightness_calls==2 && brightness_seen[0]==40 && brightness_seen[1]==12);
 +    run(6,1000,1000,false,true,true,8,2); assert(brightness_calls==1 && brightness_seen[0]==8);
++    // The same wake-only touch gives an unresolved wait a fresh 15-second bright interval.
++    run(12,1000,1000,false,true,true,40,4);
++    assert(touch_result && touch_calls==1 && notifications==1);
++    assert(brightness_calls==4 && brightness_seen[0]==40 && brightness_seen[1]==12 &&
++           brightness_seen[2]==40 && brightness_seen[3]==12);
++    assert(atomic_load(&requested_brightness)==40 && atomic_load(&touch_wake_only));
 +    run(7,300001,0,false,true,true,40,2); assert(!display_is_asleep() && atomic_load(&last_activity)==clock_ms);
 +    // Renderer attention never overrides an explicit screen-off; only a real event edge wakes it.
 +    run(0,1000,1000,true,true,true,40,1); assert(display_is_asleep() && !wakes);
 +    // Arrival while the renderer is taking the sleep lock wins the second predicate check.
 +    run(8,300001,0,false,false,false,40,1); assert(!display_is_asleep() && !sleeps);
++    // Awake bright touches are ordinary; off touches wake through the normal callback/repaint path.
++    uint32_t activity_before=atomic_load(&last_activity);
++    unsigned notify_before=notifications;
++    assert(!display_wake_from_touch() && atomic_load(&last_activity)==activity_before &&
++           notifications==notify_before);
++    run(13,1000,1000,true,false,false,40,2);
++    assert(touch_result && touch_calls==1 && !display_is_asleep() && wakes==1 && frames==1);
      // Repeated requests are idempotent; no extra callbacks/notifications.
 +    display_sleep();
      unsigned n=notifications, s=sleeps, w=wakes;
@@ -2265,7 +2362,7 @@ index 358a843e20..f087ad58cd 100644
  with tempfile.TemporaryDirectory(prefix='harness-display-power-') as folder:
 diff --git a/devices/harness-device/firmware/test/test_orientation.c b/devices/harness-device/firmware/test/test_orientation.c
 new file mode 100644
-index 0000000000..b55822c0ab
+index 00000000..b55822c0
 --- /dev/null
 +++ b/devices/harness-device/firmware/test/test_orientation.c
 @@ -0,0 +1,63 @@
@@ -2333,7 +2430,7 @@ index 0000000000..b55822c0ab
 +    puts("orientation: PASS (all four turns; full frame, partial damage, edges, guards and inverse touch)");
 +}
 diff --git a/devices/harness-device/firmware/test/test_question_ui.py b/devices/harness-device/firmware/test/test_question_ui.py
-index bef31a9268..25458ae734 100644
+index bef31a92..25458ae7 100644
 --- a/devices/harness-device/firmware/test/test_question_ui.py
 +++ b/devices/harness-device/firmware/test/test_question_ui.py
 @@ -50,7 +50,7 @@ static cJSON object(cJSON *children,int n) {
@@ -2391,7 +2488,7 @@ index bef31a9268..25458ae734 100644
      // at their real capacities and prove that no neighboring state changes.
 diff --git a/devices/harness-device/firmware/test/test_rotation_settings.py b/devices/harness-device/firmware/test/test_rotation_settings.py
 new file mode 100644
-index 0000000000..fc89f90b52
+index 00000000..fc89f90b
 --- /dev/null
 +++ b/devices/harness-device/firmware/test/test_rotation_settings.py
 @@ -0,0 +1,111 @@
@@ -2507,7 +2604,7 @@ index 0000000000..fc89f90b52
 +                    str(path / 'test.c'), '-o', str(path / 'test')], check=True)
 +    subprocess.run([str(path / 'test')], check=True)
 diff --git a/devices/harness-device/firmware/test/test_supertab.c b/devices/harness-device/firmware/test/test_supertab.c
-index a9c9152960..9274a98217 100644
+index a9c91529..9274a982 100644
 --- a/devices/harness-device/firmware/test/test_supertab.c
 +++ b/devices/harness-device/firmware/test/test_supertab.c
 @@ -104,11 +104,11 @@ static void transitions(void)
@@ -2549,8 +2646,79 @@ index a9c9152960..9274a98217 100644
  }
  
  static void lookups_and_recap(void)
+diff --git a/devices/harness-device/firmware/test/test_touch_driver.py b/devices/harness-device/firmware/test/test_touch_driver.py
+index f147cd96..87d906fc 100644
+--- a/devices/harness-device/firmware/test/test_touch_driver.py
++++ b/devices/harness-device/firmware/test/test_touch_driver.py
+@@ -34,9 +34,9 @@ static struct {int touch;} b={9217};
+ static const void *board_(void) { return &b; }
+ #define board() ((const typeof(b)*)board_())
+ typedef struct {uint32_t ms; int rc; bool down; uint16_t x,y;} sample_t;
+-static sample_t *samples; static int count, at, forwarded_down, forwarded_up, canceled, woke;
+-static bool asleep;
+-static int power_off_at, power_on_at, sleep_on_lock, locks;
++static sample_t *samples; static int count, at, forwarded_down, forwarded_up, canceled, woke, dim_wakes;
++static bool asleep, auto_dimmed;
++static int power_off_at, power_on_at, sleep_on_lock, dim_on_lock, locks;
+ static ht_gallery_t gallery;
+ static jmp_buf stop;
+ static int64_t esp_timer_get_time(void) { return samples[at].ms*1000ll; }
+@@ -50,10 +50,15 @@ static bool esp_lcd_touch_get_coordinates(void*c,uint16_t*x,uint16_t*y,uint16_t*
+ }
+ static void esp_lcd_touch_del(void*c){(void)c;}
+ static void esp_lcd_panel_io_del(void*c){(void)c;}
+-static void display_lock(void){if(++locks==sleep_on_lock)asleep=true;}
++static void display_lock(void){locks++;if(locks==sleep_on_lock)asleep=true;if(locks==dim_on_lock)auto_dimmed=true;}
+ static void display_unlock(void){}
+ static bool display_is_asleep(void){return asleep;}
+-static void display_wake(void){asleep=false;woke++;}
++static bool display_wake_from_touch(void){
++ if(!asleep&&!auto_dimmed)return false;
++ auto_dimmed=false;
++ if(asleep){asleep=false;woke++;}else dim_wakes++;
++ return true;
++}
+ static void display_bump_activity(void){}
+ static void habitat_input_stamp(int64_t n){(void)n;}
+ static void habitat_touch_cancel(void){canceled++;ht_gallery_cancel(&gallery);}
+@@ -61,15 +66,17 @@ static void habitat_touch(bool down,int x,int y,uint32_t n) {
+  ht_gallery_touch(&gallery,down,x,y,n);if(down)forwarded_down++;else forwarded_up++;
+ }
+ '''+body+r'''
+-static void run(sample_t *s,int n,bool sleep,int off,int on,int lock_sleep) {
+- samples=s;count=n;at=forwarded_down=forwarded_up=canceled=woke=0;asleep=sleep;
+- power_off_at=off;power_on_at=on;sleep_on_lock=lock_sleep;locks=0;
++static void run(sample_t *s,int n,bool sleep,bool dim,int off,int on,int lock_sleep,int lock_dim) {
++ samples=s;count=n;at=forwarded_down=forwarded_up=canceled=woke=dim_wakes=0;asleep=sleep;auto_dimmed=dim;
++ power_off_at=off;power_on_at=on;sleep_on_lock=lock_sleep;dim_on_lock=lock_dim;locks=0;
+  ht_gallery_init(&gallery,s[0].ms);
+  gallery.creature=0; // Exercise original reaction traces, independent of gallery boot art.
+  controller=(void*)1;if(!setjmp(stop))task(NULL);
+ }
+-#define RUN(s,asleep_) run(s,sizeof(s)/sizeof(s[0]),asleep_,-1,-1,-1)
+-#define RUN_POWER(s,off,on,lock_sleep) run(s,sizeof(s)/sizeof(s[0]),false,off,on,lock_sleep)
++#define RUN(s,asleep_) run(s,sizeof(s)/sizeof(s[0]),asleep_,false,-1,-1,-1,-1)
++#define RUN_DIM(s) run(s,sizeof(s)/sizeof(s[0]),false,true,-1,-1,-1,-1)
++#define RUN_POWER(s,off,on,lock_sleep) run(s,sizeof(s)/sizeof(s[0]),false,false,off,on,lock_sleep,-1)
++#define RUN_DIM_RACE(s,lock_dim) run(s,sizeof(s)/sizeof(s[0]),false,false,-1,-1,-1,lock_dim)
+ int main(void) {
+  sample_t idle_ack[]={ {0,1,0,0,0},{20,0,1,233,220},{80,0,0,233,220} };
+  RUN(idle_ack,false);assert(forwarded_down==1&&forwarded_up==1&&canceled==0);
+@@ -88,6 +95,12 @@ int main(void) {
+                   {200,0,1,233,220},{270,0,0,233,220} };
+  RUN(wake,true);assert(forwarded_down==1&&forwarded_up==1&&canceled==1&&woke==1);
+  assert(gallery.booped); // First real tap after the swallowed wake tap must work.
++ RUN_DIM(wake);assert(forwarded_down==1&&forwarded_up==1&&canceled==1&&dim_wakes==1);
++ assert(gallery.booped); // Ambient-dim wake contact is swallowed; the following tap works.
++ RUN_DIM(wake);assert(forwarded_down==1&&forwarded_up==1&&canceled==1&&dim_wakes==1);
++ assert(gallery.booped); // Attention dim uses the same wake-only contact semantics.
++ RUN_DIM_RACE(wake,1);assert(forwarded_down==1&&forwarded_up==1&&canceled==1&&dim_wakes==1);
++ assert(gallery.booped); // A dim transition while waiting for the lock cannot leak the first DOWN.
+  sample_t wake_swipe[]={ {0,0,1,233,220},{20,0,1,233,220},{80,0,0,233,220},
+                         {200,0,1,233,220},{230,0,1,100,220},{270,0,0,100,220} };
+  RUN(wake_swipe,true);assert(gallery.creature==1&&!gallery.booped);
 diff --git a/devices/harness-device/firmware/test/test_touch_ui.py b/devices/harness-device/firmware/test/test_touch_ui.py
-index 70796b5cb1..74f3d578cc 100644
+index 70796b5c..74f3d578 100644
 --- a/devices/harness-device/firmware/test/test_touch_ui.py
 +++ b/devices/harness-device/firmware/test/test_touch_ui.py
 @@ -1540,7 +1540,7 @@ static void swarm_pane_checks(const char *dir) {
@@ -2575,7 +2743,7 @@ index 70796b5cb1..74f3d578cc 100644
      swarm_setup(); scene_take();
      { bool pill = false; for (int i = 0; i < scene.count; i++) pill |= scene.runs[i].box.h == 32 && scene.runs[i].y == 400;
 diff --git a/devices/harness-device/firmware/test/test_voice_ui.py b/devices/harness-device/firmware/test/test_voice_ui.py
-index bf532f952a..ed6fba0679 100644
+index bf532f95..ed6fba06 100644
 --- a/devices/harness-device/firmware/test/test_voice_ui.py
 +++ b/devices/harness-device/firmware/test/test_voice_ui.py
 @@ -69,8 +69,8 @@ static struct {
